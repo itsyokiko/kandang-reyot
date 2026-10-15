@@ -17,7 +17,7 @@
                 <i class="ti ti-edit"></i>
                 <span>Edit</span>
             </button>
-            <form action="{{ route('kelahirans.destroy', $kelahiran) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus catatan kelahiran ini? Data anak kambing tetap aman.');">
+            <form action="{{ route('kelahirans.destroy', $kelahiran) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, this, 'Hapus Catatan Kelahiran?', 'Apakah Anda yakin ingin menghapus catatan kelahiran ini? Data anak kambing tetap aman.');">
                 @csrf
                 @method('DELETE')
                 <x-action-button type="submit" variant="danger" size="sm" icon="ti ti-trash">
@@ -28,7 +28,7 @@
     </div>
 
     <!-- Detail Card -->
-    <x-section-card title="Peristiwa Kelahiran" icon="ti ti-baby-carriage">
+    <x-section-card title="Peristiwa Kelahiran" icon="ti ti-mood-kid">
         <div class="space-y-4">
             <!-- Header Meta -->
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">

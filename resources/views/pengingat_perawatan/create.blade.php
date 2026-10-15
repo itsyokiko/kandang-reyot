@@ -16,7 +16,7 @@
     <div class="p-3 bg-teal-50/70 border border-teal-200 rounded-2xl flex items-center justify-between gap-3 text-xs">
         <div class="flex items-center gap-2.5">
             <div class="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center text-base shrink-0">
-                <i class="ti ti-spray"></i>
+                <i class="ti ti-droplet"></i>
             </div>
             <div>
                 <span class="font-bold text-teal-900 block">Perawatan Fasilitas Kandang?</span>

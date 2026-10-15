@@ -89,7 +89,7 @@
                             </form>
                         @endif
 
-                        <form action="{{ route('pengingat-perawatan.destroy', $p) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengingat ini?');">
+                        <form action="{{ route('pengingat-perawatan.destroy', $p) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, this, 'Hapus Pengingat Perawatan?', 'Apakah Anda yakin ingin menghapus pengingat ini?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-rose-600 hover:text-rose-700 p-1">

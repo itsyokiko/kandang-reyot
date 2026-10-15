@@ -22,31 +22,7 @@
         </div>
     </div>
 
-    <!-- 2. Contextual Quick Actions (Aksi Cepat) -->
-    <div class="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
-        <a href="{{ route('kambings.create') }}" class="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs active:scale-95 transition">
-            <i class="ti ti-plus"></i>
-            <span>+ Kambing</span>
-        </a>
-        <a href="{{ route('perkawinans.create') }}" class="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 text-xs font-bold shadow-xs active:scale-95 transition">
-            <i class="ti ti-heart text-rose-500"></i>
-            <span>+ Kawin</span>
-        </a>
-        <a href="{{ route('kelahirans.create') }}" class="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 text-xs font-bold shadow-xs active:scale-95 transition">
-            <i class="ti ti-baby-carriage text-purple-500"></i>
-            <span>+ Lahir</span>
-        </a>
-        <a href="{{ route('riwayat-sakit.create') }}" class="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 text-xs font-bold shadow-xs active:scale-95 transition">
-            <i class="ti ti-stethoscope text-rose-500"></i>
-            <span>+ Sakit</span>
-        </a>
-        <a href="{{ route('pengingat-perawatan.create') }}" class="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 text-xs font-bold shadow-xs active:scale-95 transition">
-            <i class="ti ti-bell-ringing text-indigo-500"></i>
-            <span>+ Pengingat</span>
-        </a>
-    </div>
-
-    <!-- 3. Interactive Grid Menu (App Launcher — Fitur yang Tidak di Bottom Nav) -->
+    <!-- 2. Interactive Grid Menu (Fitur & Modul Utama) -->
     <div>
         <div class="flex items-center justify-between mb-2.5 px-0.5">
             <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Fitur & Layanan</h2>
@@ -65,7 +41,7 @@
             <!-- 2. Kelahiran -->
             <a href="{{ route('kelahirans.index') }}" class="flex flex-col items-center justify-center p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:border-purple-400 active:scale-95 transition group text-center min-h-[88px]">
                 <div class="w-11 h-11 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl mb-1.5 group-hover:scale-105 transition shadow-2xs">
-                    <i class="ti ti-baby-carriage"></i>
+                    <i class="ti ti-mood-kid"></i>
                 </div>
                 <span class="text-xs font-bold text-slate-800 leading-tight">Kelahiran</span>
             </a>
@@ -73,7 +49,7 @@
             <!-- 3. Kesiapan Kawin -->
             <a href="{{ route('kesiapan-kawin.index') }}" class="flex flex-col items-center justify-center p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:border-pink-400 active:scale-95 transition group text-center min-h-[88px]">
                 <div class="w-11 h-11 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center text-xl mb-1.5 group-hover:scale-105 transition shadow-2xs">
-                    <i class="ti ti-heart-rate-monitor"></i>
+                    <i class="ti ti-activity"></i>
                 </div>
                 <span class="text-xs font-bold text-slate-800 leading-tight">Kesiapan Kawin</span>
             </a>
@@ -89,7 +65,7 @@
             <!-- 5. Semprot Kandang -->
             <a href="{{ route('semprot-kandang.index') }}" class="flex flex-col items-center justify-center p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:border-teal-400 active:scale-95 transition group text-center min-h-[88px]">
                 <div class="w-11 h-11 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-xl mb-1.5 group-hover:scale-105 transition shadow-2xs">
-                    <i class="ti ti-spray"></i>
+                    <i class="ti ti-droplet"></i>
                 </div>
                 <span class="text-xs font-bold text-slate-800 leading-tight">Semprot Kandang</span>
             </a>

@@ -12,7 +12,7 @@
         </a>
 
         <div class="flex items-center gap-1.5">
-            <x-action-button href="{{ route('kelahirans.create', ['perkawinan_id' => $perkawinan->id]) }}" variant="primary" size="sm" icon="ti ti-baby-carriage">
+            <x-action-button href="{{ route('kelahirans.create', ['perkawinan_id' => $perkawinan->id]) }}" variant="primary" size="sm" icon="ti ti-mood-kid">
                 Catat Kelahiran
             </x-action-button>
             <button type="button" onclick="openBottomSheet('sheetEditPerkawinan')"
@@ -20,7 +20,7 @@
                 <i class="ti ti-edit"></i>
                 <span>Edit</span>
             </button>
-            <form action="{{ route('perkawinans.destroy', $perkawinan) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus catatan perkawinan ini?');">
+            <form action="{{ route('perkawinans.destroy', $perkawinan) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, this, 'Hapus Catatan Perkawinan?', 'Apakah Anda yakin ingin menghapus catatan perkawinan ini?');">
                 @csrf
                 @method('DELETE')
                 <x-action-button type="submit" variant="danger" size="sm" icon="ti ti-trash">

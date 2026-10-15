@@ -80,7 +80,7 @@
                         <a href="{{ route('perkawinans.edit', $perkawinan) }}" class="text-amber-600 hover:text-amber-700 p-1">
                             Edit
                         </a>
-                        <form action="{{ route('perkawinans.destroy', $perkawinan) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus catatan perkawinan ini?');">
+                        <form action="{{ route('perkawinans.destroy', $perkawinan) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, this, 'Hapus Catatan Perkawinan?', 'Apakah Anda yakin ingin menghapus catatan perkawinan ini?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-rose-600 hover:text-rose-700 p-1">

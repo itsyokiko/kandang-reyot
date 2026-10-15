@@ -28,7 +28,7 @@
             </div>
         </div>
     @else
-        <x-section-card title="Catat Peristiwa Kelahiran" icon="ti ti-baby-carriage">
+        <x-section-card title="Catat Peristiwa Kelahiran" icon="ti ti-mood-kid">
             <form action="{{ route('kelahirans.store') }}" method="POST" id="form-kelahiran" class="space-y-4">
                 @csrf
 

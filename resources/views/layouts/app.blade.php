@@ -22,7 +22,11 @@
 
     <!-- [Icons] Tabler & Feather -->
     <link rel="stylesheet" href="{{ asset('assets/dist/assets/fonts/tabler-icons.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     <link rel="stylesheet" href="{{ asset('assets/dist/assets/fonts/feather.css') }}">
+
+    <!-- [SweetAlert2] -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- [Tailwind CSS CDN] -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -171,13 +175,146 @@
 
     </div>
 
-    <!-- PWA Service Worker Registration -->
+    <!-- [Global Centered Loading Spinner] -->
+    <div id="globalAppLoader"
+         class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
+         aria-hidden="true">
+        <div id="globalAppLoaderCard" class="bg-white/95 rounded-3xl p-6 shadow-2xl flex flex-col items-center gap-3 border border-slate-100 max-w-[220px] w-full text-center transform scale-95 transition-transform duration-200">
+            <div class="relative w-14 h-14 flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-4 border-emerald-100"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin"></div>
+                <span class="text-xl select-none">🐐</span>
+            </div>
+            <div class="space-y-0.5">
+                <h4 id="globalLoaderTitle" class="text-xs font-bold text-slate-800">Memproses Data</h4>
+                <p id="globalLoaderSubtitle" class="text-[10px] text-slate-500 font-medium">Mohon tunggu sebentar...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PWA Service Worker Registration & Global App Helpers -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
             });
         }
+
+        // Global Centered Loader Controller
+        let loaderTimer = null;
+        function showAppLoader(title = 'Memproses Data...', subtitle = 'Mohon tunggu sebentar...') {
+            const loader = document.getElementById('globalAppLoader');
+            const card = document.getElementById('globalAppLoaderCard');
+            const titleEl = document.getElementById('globalLoaderTitle');
+            const subEl = document.getElementById('globalLoaderSubtitle');
+
+            if (!loader) return;
+            if (titleEl) titleEl.textContent = title;
+            if (subEl) subEl.textContent = subtitle;
+
+            loader.classList.remove('opacity-0', 'pointer-events-none');
+            if (card) card.classList.remove('scale-95');
+
+            clearTimeout(loaderTimer);
+            loaderTimer = setTimeout(() => {
+                hideAppLoader();
+            }, 10000); // 10s fallback
+        }
+
+        function hideAppLoader() {
+            clearTimeout(loaderTimer);
+            const loader = document.getElementById('globalAppLoader');
+            const card = document.getElementById('globalAppLoaderCard');
+            if (!loader) return;
+            loader.classList.add('opacity-0', 'pointer-events-none');
+            if (card) card.classList.add('scale-95');
+        }
+
+        window.addEventListener('pageshow', hideAppLoader);
+        window.addEventListener('load', hideAppLoader);
+
+        // Auto show loader on internal page navigation links
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (!link) return;
+
+            const href = link.getAttribute('href');
+            const target = link.getAttribute('target');
+
+            if (!href || href.startsWith('#') || href.startsWith('javascript:') || target === '_blank' || link.hasAttribute('download')) {
+                return;
+            }
+
+            try {
+                const url = new URL(href, window.location.origin);
+                if (url.origin === window.location.origin && (url.pathname !== window.location.pathname || url.search !== window.location.search)) {
+                    showAppLoader('Memuat Halaman...', 'Menyiapkan tampilan...');
+                }
+            } catch (err) {}
+        });
+
+        // Auto show loader on form submit (unless opted out)
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form.classList.contains('no-loader')) return;
+            showAppLoader('Menyimpan Data...', 'Sedang memproses permintaan...');
+        });
+
+        // Global SweetAlert Confirm Delete Helper
+        window.confirmDelete = function(event, form, title = 'Hapus Data?', text = 'Data yang dihapus tidak dapat dikembalikan.') {
+            if (event && event.preventDefault) {
+                event.preventDefault();
+            }
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                customClass: {
+                    popup: 'rounded-3xl border border-slate-100 shadow-2xl',
+                    confirmButton: 'rounded-xl font-bold px-4 py-2.5 text-xs',
+                    cancelButton: 'rounded-xl font-medium px-4 py-2.5 text-xs'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    showAppLoader('Menghapus Data...', 'Sedang menghapus record...');
+                    form.submit();
+                }
+            });
+            return false;
+        };
+
+        // SweetAlert Flash Notifications
+        @if (session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: {!! json_encode(session('success')) !!},
+                timer: 2400,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'rounded-3xl border border-slate-100 shadow-2xl'
+                }
+            });
+        @endif
+
+        @if (session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Terjadi Kesalahan',
+                text: {!! json_encode(session('error')) !!},
+                confirmButtonColor: '#059669',
+                confirmButtonText: 'Tutup',
+                customClass: {
+                    popup: 'rounded-3xl border border-slate-100 shadow-2xl'
+                }
+            });
+        @endif
     </script>
 </body>
 </html>

@@ -3,6 +3,32 @@
 @section('title', 'Pohon Silsilah - ' . ($kambing ? $kambing->nama : 'Kambing'))
 
 @section('content')
+<style>
+    .canvas-fullscreen-mode {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 9990 !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+    .canvas-rotated-mode {
+        position: fixed !important;
+        top: 0 !important;
+        left: 100vw !important;
+        width: 100vh !important;
+        height: 100vw !important;
+        transform: rotate(90deg) !important;
+        transform-origin: top left !important;
+        z-index: 9990 !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+</style>
 <div class="space-y-4">
     <!-- Header & Selector Card -->
     <x-section-card>
@@ -36,6 +62,11 @@
                         class="px-3 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition whitespace-nowrap active:scale-95">
                         Profil &rarr;
                     </a>
+                    <button type="button" id="btn-enter-landscape"
+                        class="px-3 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-xs transition flex items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                        <i class="ti ti-layout-distribute-horizontal text-sm"></i>
+                        <span>Landscape</span>
+                    </button>
                 </div>
             @endif
         </div>
@@ -51,11 +82,30 @@
         />
     @else
         <!-- Canvas Viewport -->
-        <div class="relative bg-slate-950 border border-slate-800 rounded-2xl shadow-inner overflow-hidden select-none"
+        <div class="relative bg-slate-950 border border-slate-800 rounded-2xl shadow-inner overflow-hidden select-none transition-all duration-200"
              style="height: 600px;" id="canvas-viewport">
 
-            <!-- Controls (Zoom In, Zoom Out, Reset) -->
+            <!-- Landscape Mode Top Control Bar -->
+            <div id="landscape-bar" class="hidden absolute top-3 left-3 z-30 flex items-center gap-2">
+                <button type="button" id="btn-exit-landscape"
+                    class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-xl transition active:scale-95">
+                    <i class="ti ti-x text-sm"></i>
+                    <span>Keluar</span>
+                </button>
+                <button type="button" id="btn-rotate-canvas"
+                    class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold shadow-xl transition active:scale-95">
+                    <i class="ti ti-rotate-clockwise text-sm"></i>
+                    <span id="rotate-btn-label">Putar 90°</span>
+                </button>
+                <span id="landscape-goat-name" class="px-3 py-2 rounded-xl bg-slate-900/90 text-emerald-400 border border-slate-700 text-xs font-bold shadow-xl truncate max-w-[150px]"></span>
+            </div>
+
+            <!-- Controls (Zoom In, Zoom Out, Reset, Landscape Fullscreen) -->
             <div class="absolute top-3 right-3 z-20 flex flex-col gap-1.5 bg-slate-900/90 backdrop-blur border border-slate-700/80 rounded-2xl p-1 shadow-lg">
+                <button type="button" id="btn-canvas-landscape" title="Mode Landscape Fullscreen"
+                    class="w-10 h-10 flex items-center justify-center text-indigo-400 hover:text-white hover:bg-slate-800 rounded-xl text-sm font-bold transition active:scale-95">
+                    <i class="ti ti-layout-distribute-horizontal text-base"></i>
+                </button>
                 <button type="button" id="btn-zoom-in" title="Zoom In"
                     class="w-10 h-10 flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 rounded-xl font-bold text-lg transition active:scale-95">
                     +
@@ -95,47 +145,47 @@
                 <!-- HTML Nodes Layer -->
                 <div id="tree-nodes-container" class="absolute inset-0 pointer-events-auto"></div>
             </div>
+
+            <!-- Modal Detail Node Kambing (Inside viewport for seamless landscape orientation) -->
+            <div id="modal-node-detail" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden p-4">
+                <div class="bg-white border border-slate-200 rounded-3xl shadow-2xl max-w-xs w-full p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+                    <div class="flex items-start justify-between pb-2 border-b border-slate-100">
+                        <div>
+                            <span id="modal-role-badge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700 uppercase tracking-wider block w-fit mb-1">
+                                Kambing
+                            </span>
+                            <h3 id="modal-kambing-nama" class="text-lg font-extrabold text-slate-900">Nama</h3>
+                        </div>
+                        <button type="button" id="btn-close-modal" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:scale-95 transition">
+                            <i class="ti ti-x text-lg"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div id="modal-kambing-avatar" class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex-shrink-0 overflow-hidden flex items-center justify-center text-2xl">
+                            🐐
+                        </div>
+                        <div class="space-y-0.5 text-xs text-slate-600">
+                            <p>Kelamin: <strong id="modal-kambing-gender" class="text-slate-900">-</strong></p>
+                            <p>Ras: <span id="modal-kambing-ras" class="text-slate-800 font-semibold">-</span></p>
+                            <p>Lahir: <span id="modal-kambing-lahir" class="text-slate-800 font-semibold">-</span></p>
+                            <p>Status: <span id="modal-kambing-status" class="capitalize font-bold">-</span></p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                        <a id="modal-btn-detail" href="#" class="px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">
+                            Profil &rarr;
+                        </a>
+                        <button type="button" id="modal-btn-set-pusat"
+                            class="px-3 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs transition active:scale-95">
+                            🌳 Pusat
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     @endif
-</div>
-
-<!-- Modal Detail Node Kambing -->
-<div id="modal-node-detail" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden p-4">
-    <div class="bg-white border border-slate-200 rounded-3xl shadow-2xl max-w-xs w-full p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-        <div class="flex items-start justify-between pb-2 border-b border-slate-100">
-            <div>
-                <span id="modal-role-badge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700 uppercase tracking-wider block w-fit mb-1">
-                    Kambing
-                </span>
-                <h3 id="modal-kambing-nama" class="text-lg font-extrabold text-slate-900">Nama</h3>
-            </div>
-            <button type="button" id="btn-close-modal" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:scale-95 transition">
-                <i class="ti ti-x text-lg"></i>
-            </button>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <div id="modal-kambing-avatar" class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex-shrink-0 overflow-hidden flex items-center justify-center text-2xl">
-                🐐
-            </div>
-            <div class="space-y-0.5 text-xs text-slate-600">
-                <p>Kelamin: <strong id="modal-kambing-gender" class="text-slate-900">-</strong></p>
-                <p>Ras: <span id="modal-kambing-ras" class="text-slate-800 font-semibold">-</span></p>
-                <p>Lahir: <span id="modal-kambing-lahir" class="text-slate-800 font-semibold">-</span></p>
-                <p>Status: <span id="modal-kambing-status" class="capitalize font-bold">-</span></p>
-            </div>
-        </div>
-
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-            <a id="modal-btn-detail" href="#" class="px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">
-                Profil &rarr;
-            </a>
-            <button type="button" id="modal-btn-set-pusat"
-                class="px-3 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs transition active:scale-95">
-                🌳 Pusat
-            </button>
-        </div>
-    </div>
 </div>
 
 @if ($kambing)
@@ -172,6 +222,117 @@
 
         let selectedNodeKambing = null;
 
+        // Landscape Mode State & Elements
+        let isLandscape = false;
+        let isRotated = false;
+
+        const btnEnterLandscape = document.getElementById('btn-enter-landscape');
+        const btnCanvasLandscape = document.getElementById('btn-canvas-landscape');
+        const landscapeBar = document.getElementById('landscape-bar');
+        const btnExitLandscape = document.getElementById('btn-exit-landscape');
+        const btnRotateCanvas = document.getElementById('btn-rotate-canvas');
+        const rotateBtnLabel = document.getElementById('rotate-btn-label');
+        const landscapeGoatName = document.getElementById('landscape-goat-name');
+
+        function getPointerPos(e) {
+            const t = e.touches ? e.touches[0] : e;
+            if (isRotated) {
+                return {
+                    x: t.clientY,
+                    y: window.innerWidth - t.clientX
+                };
+            }
+            return {
+                x: t.clientX,
+                y: t.clientY
+            };
+        }
+
+        function enterLandscape() {
+            isLandscape = true;
+            document.body.classList.add('overflow-hidden');
+            if (landscapeBar) landscapeBar.classList.remove('hidden');
+
+            try {
+                if (viewport.requestFullscreen) {
+                    viewport.requestFullscreen().catch(() => {});
+                } else if (viewport.webkitRequestFullscreen) {
+                    viewport.webkitRequestFullscreen();
+                }
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } catch (e) {}
+
+            if (window.innerWidth < window.innerHeight) {
+                setRotatedMode(true);
+            } else {
+                setRotatedMode(false);
+            }
+
+            if (landscapeGoatName && currentTreeData && currentTreeData.pusat) {
+                landscapeGoatName.textContent = currentTreeData.pusat.nama;
+            }
+
+            setTimeout(centerOnPusat, 120);
+        }
+
+        function exitLandscape() {
+            isLandscape = false;
+            isRotated = false;
+            document.body.classList.remove('overflow-hidden');
+            viewport.classList.remove('canvas-fullscreen-mode', 'canvas-rotated-mode');
+            if (landscapeBar) landscapeBar.classList.add('hidden');
+
+            try {
+                if (document.exitFullscreen && document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                }
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            } catch (e) {}
+
+            setTimeout(centerOnPusat, 120);
+        }
+
+        function setRotatedMode(rotate) {
+            isRotated = rotate;
+            viewport.classList.remove('canvas-fullscreen-mode', 'canvas-rotated-mode');
+            if (isRotated) {
+                viewport.classList.add('canvas-rotated-mode');
+                if (rotateBtnLabel) rotateBtnLabel.textContent = 'Rotasi 0°';
+            } else {
+                viewport.classList.add('canvas-fullscreen-mode');
+                if (rotateBtnLabel) rotateBtnLabel.textContent = 'Rotasi 90°';
+            }
+            setTimeout(centerOnPusat, 60);
+        }
+
+        if (btnEnterLandscape) btnEnterLandscape.addEventListener('click', enterLandscape);
+        if (btnCanvasLandscape) btnCanvasLandscape.addEventListener('click', enterLandscape);
+        if (btnExitLandscape) btnExitLandscape.addEventListener('click', exitLandscape);
+        if (btnRotateCanvas) {
+            btnRotateCanvas.addEventListener('click', function() {
+                setRotatedMode(!isRotated);
+            });
+        }
+
+        window.addEventListener('resize', function() {
+            if (isLandscape) {
+                if (window.innerWidth > window.innerHeight && isRotated) {
+                    setRotatedMode(false);
+                }
+                setTimeout(centerOnPusat, 100);
+            }
+        });
+
+        document.addEventListener('fullscreenchange', function() {
+            if (!document.fullscreenElement && isLandscape && !isRotated) {
+                exitLandscape();
+            }
+        });
+
         // Viewport Transform State
         let scale = 0.95;
         let panX = 0;
@@ -184,20 +345,22 @@
             surface.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
         }
 
-        // Panning Handlers
+        // Panning Handlers (Mouse)
         viewport.addEventListener('mousedown', function (e) {
             if (e.target.closest('.interactive-node') || e.target.closest('button') || e.target.closest('select')) {
                 return;
             }
             isDragging = true;
-            startX = e.clientX - panX;
-            startY = e.clientY - panY;
+            const pos = getPointerPos(e);
+            startX = pos.x - panX;
+            startY = pos.y - panY;
         });
 
         window.addEventListener('mousemove', function (e) {
             if (!isDragging) return;
-            panX = e.clientX - startX;
-            panY = e.clientY - startY;
+            const pos = getPointerPos(e);
+            panX = pos.x - startX;
+            panY = pos.y - startY;
             updateTransform();
         });
 
@@ -205,27 +368,49 @@
             isDragging = false;
         });
 
-        // Touch Panning for Mobile
+        // Touch Panning & Pinch Zoom for Mobile
+        let initialPinchDist = 0;
+        let initialPinchScale = 1;
+
         viewport.addEventListener('touchstart', function (e) {
             if (e.target.closest('.interactive-node') || e.target.closest('button') || e.target.closest('select')) {
                 return;
             }
             if (e.touches.length === 1) {
                 isDragging = true;
-                startX = e.touches[0].clientX - panX;
-                startY = e.touches[0].clientY - panY;
+                const pos = getPointerPos(e);
+                startX = pos.x - panX;
+                startY = pos.y - panY;
+            } else if (e.touches.length === 2) {
+                isDragging = false;
+                initialPinchDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialPinchScale = scale;
             }
         }, { passive: true });
 
         window.addEventListener('touchmove', function (e) {
-            if (!isDragging || e.touches.length !== 1) return;
-            panX = e.touches[0].clientX - startX;
-            panY = e.touches[0].clientY - startY;
-            updateTransform();
+            if (isDragging && e.touches.length === 1) {
+                const pos = getPointerPos(e);
+                panX = pos.x - startX;
+                panY = pos.y - startY;
+                updateTransform();
+            } else if (e.touches.length === 2 && initialPinchDist > 0) {
+                const currentDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const factor = currentDist / initialPinchDist;
+                scale = Math.min(Math.max(initialPinchScale * factor, 0.35), 2.2);
+                updateTransform();
+            }
         }, { passive: true });
 
         window.addEventListener('touchend', function () {
             isDragging = false;
+            initialPinchDist = 0;
         });
 
         // Zoom Handlers
@@ -235,8 +420,10 @@
             const newScale = Math.min(Math.max(scale * zoomFactor, 0.35), 2.2);
 
             const rect = viewport.getBoundingClientRect();
-            const cx = rect.width / 2;
-            const cy = rect.height / 2;
+            const effectiveWidth = isRotated ? rect.height : rect.width;
+            const effectiveHeight = isRotated ? rect.width : rect.height;
+            const cx = effectiveWidth / 2;
+            const cy = effectiveHeight / 2;
 
             panX = cx - (cx - panX) * (newScale / scale);
             panY = cy - (cy - panY) * (newScale / scale);
@@ -260,10 +447,12 @@
         });
 
         function centerOnPusat() {
-            scale = 0.95;
+            scale = isLandscape ? 1.05 : 0.95;
             const rect = viewport.getBoundingClientRect();
-            panX = (rect.width / 2) - (1600 * scale);
-            panY = (rect.height / 2) - (580 * scale);
+            const effectiveWidth = isRotated ? rect.height : rect.width;
+            const effectiveHeight = isRotated ? rect.width : rect.height;
+            panX = (effectiveWidth / 2) - (1600 * scale);
+            panY = (effectiveHeight / 2) - (580 * scale);
             updateTransform();
         }
 
@@ -509,6 +698,7 @@
                     currentPusatId = kambingId;
 
                     if (titleNama) titleNama.textContent = newData.pusat.nama;
+                    if (landscapeGoatName) landscapeGoatName.textContent = newData.pusat.nama;
                     if (btnLihatProfil) btnLihatProfil.href = newData.pusat.detail_url;
                     if (selectKambing) selectKambing.value = kambingId;
 

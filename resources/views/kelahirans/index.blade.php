@@ -20,7 +20,7 @@
     @if ($kelahirans->isEmpty())
         <div class="p-6 text-center bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
             <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-2xl mx-auto shadow-inner">
-                <i class="ti ti-baby-carriage"></i>
+                <i class="ti ti-mood-kid"></i>
             </div>
             <h3 class="text-sm font-extrabold text-slate-800">Belum ada catatan kelahiran</h3>
             <p class="text-xs text-slate-500 max-w-xs mx-auto">Catat peristiwa kelahiran ketika induk kambing melahirkan anak.</p>
@@ -95,7 +95,7 @@
                             <a href="{{ route('kelahirans.edit', $kelahiran) }}" class="text-amber-600 hover:text-amber-700 p-1">
                                 Edit
                             </a>
-                            <form action="{{ route('kelahirans.destroy', $kelahiran) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus catatan kelahiran ini? (Data anak tidak akan dihapus, hanya tautan kelahirannya yang dilepas)');">
+                            <form action="{{ route('kelahirans.destroy', $kelahiran) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, this, 'Hapus Catatan Kelahiran?', 'Apakah Anda yakin ingin menghapus catatan kelahiran ini? (Data anak tidak akan dihapus, hanya tautan kelahirannya yang dilepas)');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-rose-600 hover:text-rose-700 p-1">

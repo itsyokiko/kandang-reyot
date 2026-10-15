@@ -70,37 +70,14 @@
                     <!-- Actions -->
                     <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 text-xs font-semibold">
                         @if ($r->status === 'sedang_sakit')
-                            <!-- Inline Konfirmasi Sembuh / Mati -->
-                            <details class="inline-block text-left relative">
-                                <summary class="cursor-pointer text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 select-none active:scale-95 transition">
-                                    Konfirmasi
-                                </summary>
-                                <div class="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-20 space-y-3">
-                                    <div class="font-bold text-xs text-slate-900">Konfirmasi Hasil Sakit</div>
-                                    <form action="{{ route('riwayat-sakit.konfirmasi', $r) }}" method="POST" class="space-y-3">
-                                        @csrf
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Hasil</label>
-                                            <select name="status" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                                <option value="sembuh">Sembuh</option>
-                                                <option value="mati">Mati</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tanggal Selesai / Mati</label>
-                                            <input type="date" name="tanggal_selesai" value="{{ date('Y-m-d') }}" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
-                                        </div>
-                                        <div class="flex justify-end gap-2 pt-1">
-                                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition">
-                                                Simpan
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </details>
+                            <button type="button"
+                                    onclick="openKonfirmasiSelesai('{{ $r->id }}', '{{ addslashes($r->kambing->nama) }}', '{{ $r->tanggal_mulai->format('Y-m-d') }}')"
+                                    class="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200 select-none active:scale-95 transition">
+                                Selesaikan Riwayat
+                            </button>
                         @endif
 
-                        <form action="{{ route('riwayat-sakit.destroy', $r) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus catatan sakit ini?');">
+                        <form action="{{ route('riwayat-sakit.destroy', $r) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, this, 'Hapus Catatan Sakit?', 'Apakah Anda yakin ingin menghapus catatan sakit ini?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-rose-600 hover:text-rose-700 p-1">
@@ -182,6 +159,61 @@
         </div>
     </form>
 </x-bottom-sheet>
+
+<!-- Bottom Sheet Konfirmasi Hasil Sakit -->
+<x-bottom-sheet id="sheetKonfirmasiSelesai" title="Konfirmasi Selesai Sakit">
+    <form id="formKonfirmasiSelesai" action="" method="POST" class="space-y-4">
+        @csrf
+
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl">
+            <span class="text-xs text-slate-500 font-medium block">Kambing Sakit:</span>
+            <strong id="konfirmasiKambingNama" class="text-sm font-bold text-slate-800"></strong>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Hasil Perawatan <span class="text-rose-500">*</span>
+            </label>
+            <select name="status" id="konfirmasiStatus" required
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="sembuh">🟢 Sembuh</option>
+                <option value="mati">🔴 Mati</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Tanggal Selesai / Mati <span class="text-rose-500">*</span>
+            </label>
+            <input type="date" name="tanggal_selesai" id="konfirmasiTanggalSelesai" value="{{ date('Y-m-d') }}" required
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" onclick="closeBottomSheet('sheetKonfirmasiSelesai')"
+                    class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs transition">
+                Batal
+            </button>
+            <button type="submit"
+                    class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs active:scale-95 transition">
+                Simpan Hasil
+            </button>
+        </div>
+    </form>
+</x-bottom-sheet>
+
+<script>
+    function openKonfirmasiSelesai(id, namaKambing, tglMulai) {
+        const form = document.getElementById('formKonfirmasiSelesai');
+        form.action = `/riwayat-sakit/${id}/konfirmasi`;
+        document.getElementById('konfirmasiKambingNama').textContent = namaKambing;
+        const tglInput = document.getElementById('konfirmasiTanggalSelesai');
+        if (tglMulai) {
+            tglInput.min = tglMulai;
+        }
+        openBottomSheet('sheetKonfirmasiSelesai');
+    }
+</script>
 
 @if(request('action') === 'create' || ($errors->any() && !old('status_hasil')))
 <script>

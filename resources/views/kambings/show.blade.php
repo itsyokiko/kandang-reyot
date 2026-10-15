@@ -20,7 +20,7 @@
                 <i class="ti ti-edit"></i>
                 <span>Edit</span>
             </button>
-            <form action="{{ route('kambings.destroy', $kambing) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data kambing {{ $kambing->nama }}?');">
+            <form action="{{ route('kambings.destroy', $kambing) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, this, 'Hapus Kambing?', 'Apakah Anda yakin ingin menghapus data kambing {{ $kambing->nama }}?');">
                 @csrf
                 @method('DELETE')
                 <x-action-button type="submit" variant="danger" size="sm" icon="ti ti-trash">
@@ -162,7 +162,7 @@
 
     <x-section-card
         title="Riwayat Kelahiran"
-        icon="ti ti-baby-carriage"
+        icon="ti ti-mood-kid"
         :actionText="$kambing->jenis_kelamin === 'betina' ? '+ Catat' : null"
         :actionHref="$kambing->jenis_kelamin === 'betina' ? route('kelahirans.create', ['induk_id' => $kambing->id]) : null"
     >

@@ -171,7 +171,7 @@
                             <a href="{{ route('kambings.edit', $kambing) }}" class="text-amber-600 hover:text-amber-700 p-1">
                                 Edit
                             </a>
-                            <form action="{{ route('kambings.destroy', $kambing) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data kambing {{ $kambing->nama }}?');">
+                            <form action="{{ route('kambings.destroy', $kambing) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, this, 'Hapus Kambing?', 'Apakah Anda yakin ingin menghapus data kambing {{ $kambing->nama }}?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-rose-600 hover:text-rose-700 p-1">

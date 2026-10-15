@@ -44,7 +44,7 @@
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex items-center gap-2.5">
                         <div class="w-10 h-10 rounded-xl {{ $isOverdue ? 'bg-rose-100 text-rose-700' : ($isToday ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') }} flex items-center justify-center text-xl">
-                            <i class="ti ti-spray"></i>
+                            <i class="ti ti-droplet"></i>
                         </div>
                         <div>
                             <span class="text-xs font-extrabold uppercase tracking-wide {{ $isOverdue ? 'text-rose-800' : ($isToday ? 'text-amber-800' : 'text-emerald-800') }}">
@@ -85,77 +85,30 @@
                 <i class="ti ti-info-circle text-emerald-600"></i> Setelah dikonfirmasi, sistem otomatis membuat jadwal semprot berikutnya sesuai interval ({{ $intervalDefault }} hari).
             </p>
         @else
-            <div class="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-1.5">
+            <div class="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-2">
                 <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-lg">
-                    <i class="ti ti-spray"></i>
+                    <i class="ti ti-droplet"></i>
                 </div>
                 <h4 class="text-xs font-bold text-slate-700">Belum Ada Jadwal Semprot Aktif</h4>
                 <p class="text-[11px] text-slate-500 max-w-xs mx-auto">
-                    Atur jadwal pertama di formulir bawah. Jadwal akan berulang otomatis setelah Anda mengonfirmasi penyemprotan.
+                    Atur jadwal pertama untuk memulai disinfeksi rutin fasilitas kandang.
                 </p>
+                <div class="pt-1">
+                    <button type="button" onclick="openBottomSheet('sheetAturSemprot')"
+                            class="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition inline-flex items-center gap-1.5">
+                        <i class="ti ti-plus"></i>
+                        <span>Atur Jadwal Pertama</span>
+                    </button>
+                </div>
             </div>
         @endif
     </x-section-card>
 
-    <!-- 2. Form Atur Jadwal Semprot Baru (Fasilitas Kandang Murni) -->
-    <x-section-card title="Atur Jadwal Semprot Kandang" icon="ti ti-adjustments">
-        <form action="{{ route('semprot-kandang.store') }}" method="POST" class="space-y-3.5">
-            @csrf
-
-            <!-- Tanggal Semprot -->
-            <div>
-                <label for="tanggal" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Tanggal Jadwal Semprot <span class="text-rose-500">*</span>
-                </label>
-                <input type="date" name="tanggal" id="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}" required
-                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
-                @error('tanggal')
-                    <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Interval Hari -->
-            <div>
-                <label for="interval_hari" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Interval Rutin (Hari)
-                </label>
-                <div class="flex items-center gap-2">
-                    <input type="number" name="interval_hari" id="interval_hari" min="1" max="365"
-                           value="{{ old('interval_hari', $intervalDefault) }}"
-                           class="w-32 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
-                    <span class="text-xs font-semibold text-slate-500">Hari sekali (Default: {{ $intervalDefault }} hari)</span>
-                </div>
-                @error('interval_hari')
-                    <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Catatan Fasilitas -->
-            <div>
-                <label for="catatan" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Catatan Fasilitas (Opsional)
-                </label>
-                <textarea name="catatan" id="catatan" rows="2" placeholder="Contoh: Disinfeksi seluruh lantai, sekat bambu & tempat pakan..."
-                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">{{ old('catatan') }}</textarea>
-                @error('catatan')
-                    <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <div class="pt-2">
-                <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5">
-                    <i class="ti ti-plus"></i>
-                    <span>Simpan Jadwal Semprot</span>
-                </button>
-            </div>
-        </form>
-    </x-section-card>
-
-    <!-- 3. Riwayat Penyemprotan Kandang -->
+    <!-- 2. Riwayat Penyemprotan Kandang -->
     <x-section-card title="Riwayat Penyemprotan Selesai" icon="ti ti-history">
         @if ($riwayatSemprot->isEmpty())
             <div class="text-center py-6 text-slate-400">
-                <i class="ti ti-notes-off text-3xl mb-1 block"></i>
+                <i class="ti ti-clipboard text-3xl mb-1 block"></i>
                 <p class="text-xs">Belum ada riwayat penyemprotan yang diselesaikan.</p>
             </div>
         @else
@@ -184,4 +137,71 @@
         @endif
     </x-section-card>
 </div>
+
+<!-- Bottom Sheet Atur Jadwal Semprot -->
+<x-bottom-sheet id="sheetAturSemprot" title="Atur Jadwal Semprot Kandang">
+    <form action="{{ route('semprot-kandang.store') }}" method="POST" class="space-y-4">
+        @csrf
+
+        <!-- Tanggal Semprot -->
+        <div>
+            <label for="sheet_tanggal_semprot" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Tanggal Jadwal Semprot <span class="text-rose-500">*</span>
+            </label>
+            <input type="date" name="tanggal" id="sheet_tanggal_semprot" value="{{ old('tanggal', date('Y-m-d')) }}" required
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+            @error('tanggal')
+                <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Interval Hari -->
+        <div>
+            <label for="sheet_interval_hari" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Interval Rutin (Hari)
+            </label>
+            <div class="flex items-center gap-2">
+                <input type="number" name="interval_hari" id="sheet_interval_hari" min="1" max="365"
+                       value="{{ old('interval_hari', $intervalDefault) }}"
+                       class="w-28 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                <span class="text-xs font-semibold text-slate-500">Hari sekali (Default: {{ $intervalDefault }} hari)</span>
+            </div>
+            @error('interval_hari')
+                <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Catatan Fasilitas -->
+        <div>
+            <label for="sheet_catatan_semprot" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Catatan Fasilitas (Opsional)
+            </label>
+            <textarea name="catatan" id="sheet_catatan_semprot" rows="2" placeholder="Contoh: Disinfeksi seluruh lantai, sekat bambu & tempat pakan..."
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">{{ old('catatan') }}</textarea>
+            @error('catatan')
+                <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" onclick="closeBottomSheet('sheetAturSemprot')"
+                    class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs transition">
+                Batal
+            </button>
+            <button type="submit"
+                    class="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs active:scale-95 transition">
+                Simpan Jadwal Semprot
+            </button>
+        </div>
+    </form>
+</x-bottom-sheet>
+
+@if(request('action') === 'create' || $errors->any())
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        openBottomSheet('sheetAturSemprot');
+    });
+</script>
+@endif
 @endsection
