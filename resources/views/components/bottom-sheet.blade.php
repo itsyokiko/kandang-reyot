@@ -39,7 +39,8 @@
     @endif
 
     {{-- Content: flex-1 min-h-0 allows proper scrolling on all device screens --}}
-    <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 pb-8 space-y-4">
+    {{-- Bottom padding is measured from bottom-nav height (4rem/64px) + safe area + extra margin so action buttons are clearly visible above bottom nav --}}
+    <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] space-y-4">
         {{ $slot }}
     </div>
 </div>
