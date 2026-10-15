@@ -3,27 +3,49 @@
 @section('title', 'Dashboard Kandang')
 
 @section('content')
-<div class="space-y-4">
-    <!-- 1. App Launcher Greeting / Header -->
-    @php
-        $hour = (int) date('H');
-        $greeting = $hour < 11 ? 'Selamat Pagi' : ($hour < 15 ? 'Selamat Siang' : ($hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
-    @endphp
-    <div class="bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-800 rounded-3xl p-5 text-white shadow-md relative overflow-hidden">
+@php
+    $hour = (int) now()->format('H');
+    $timeGreeting = $hour < 11 ? 'Selamat Pagi' : ($hour < 15 ? 'Selamat Siang' : ($hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
+
+    $user = auth()->user();
+    $rawName = trim($user?->name ?? '');
+    if (empty($rawName) && !empty($user?->email)) {
+        $rawName = explode('@', $user->email)[0];
+        $rawName = str_replace(['.', '_', '-'], ' ', $rawName);
+    }
+    $firstName = !empty($rawName) ? explode(' ', $rawName)[0] : 'Peternak';
+    $firstName = ucfirst($firstName);
+@endphp
+
+<div class="relative w-full">
+    <!-- 1. Integrated Header & Green Hero Container (Sticky in background) -->
+    <div class="sticky top-[56px] z-0 bg-gradient-to-b from-emerald-800 via-emerald-700 to-emerald-600 px-5 pt-3 pb-16 text-white relative overflow-hidden">
         <div class="absolute -right-4 -bottom-6 text-7xl opacity-15 select-none pointer-events-none">🐐</div>
-        <div class="relative z-10 space-y-1">
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-emerald-100 backdrop-blur-xs">
-                <span>🟢</span> Kandang Reyot Mobile
-            </span>
-            <h1 class="text-xl font-black tracking-tight text-white mt-1">Dashboard Kandang</h1>
+        <div class="relative z-10 space-y-1.5">
+            <div class="flex items-center justify-between">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-emerald-100 backdrop-blur-xs">
+                    <span>🟢</span> Kandang Reyot • Dashboard Kandang
+                </span>
+                <span class="text-[11px] text-emerald-200 font-medium">{{ now()->translatedFormat('d M Y') }}</span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
+                {{ $timeGreeting }}, {{ $firstName }}!
+            </h1>
             <p class="text-xs text-emerald-100/90 font-medium">
-                {{ $greeting }}! Kelola peternakan kambing dengan mudah & praktis.
+                Kelola peternakan kambing dengan mudah &amp; praktis.
             </p>
         </div>
     </div>
 
-    <!-- 2. Interactive Grid Menu (Fitur & Modul Utama) -->
-    <div>
+    <!-- 2. White Sheet (Bottom Sheet Style) covering the lower part of green container -->
+    <div class="relative z-10 -mt-8 bg-slate-50 rounded-t-[32px] shadow-[0_-10px_35px_rgba(0,0,0,0.14)] border-t border-slate-200/80 px-3.5 pt-2 pb-6 space-y-4">
+        <!-- Sheet Handle Bar -->
+        <div class="pt-1.5 pb-2 flex justify-center cursor-pointer select-none">
+            <div class="w-12 h-1.5 rounded-full bg-slate-300"></div>
+        </div>
+
+        <!-- 2. Interactive Grid Menu (Fitur & Modul Utama) -->
+        <div>
         <div class="flex items-center justify-between mb-2.5 px-0.5">
             <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Fitur & Layanan</h2>
             <span class="text-[11px] text-slate-400 font-medium">6 Modul</span>
@@ -329,5 +351,6 @@
             @endif
         </div>
     </x-section-card>
+    </div>
 </div>
 @endsection

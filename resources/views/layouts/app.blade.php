@@ -149,7 +149,7 @@
 <body class="h-full bg-slate-950 antialiased select-none text-slate-800">
 
     <!-- Mobile Device Container Wrapper (Centered on Desktop with native card frame) -->
-    <div class="w-full max-w-lg mx-auto min-h-screen bg-slate-50 relative flex flex-col shadow-2xl border-x border-slate-800/40 overflow-x-hidden">
+    <div class="w-full max-w-lg mx-auto min-h-screen bg-slate-50 relative flex flex-col shadow-2xl border-x border-slate-800/40 overflow-x-clip">
 
         <!-- Top App Header -->
         <x-app-header :title="View::hasSection('title') ? trim(View::getSection('title')) : 'Kandang Reyot'" />
@@ -186,7 +186,7 @@
         @endif
 
         <!-- Main Content Area with Seamless Transition & Safe Spacing -->
-        <main class="flex-1 w-full px-3.5 py-4 pb-28 sm:pb-32 app-screen-content">
+        <main class="flex-1 w-full {{ request()->routeIs('dashboard') ? 'px-0 pt-0 pb-28 sm:pb-32' : 'px-3.5 py-4 pb-28 sm:pb-32' }} app-screen-content">
             @yield('content')
         </main>
 

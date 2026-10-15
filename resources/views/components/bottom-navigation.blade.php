@@ -1,4 +1,4 @@
-<nav class="fixed bottom-0 left-0 right-0 z-40 max-w-lg mx-auto bg-white/95 backdrop-blur-lg border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)]" aria-label="Navigasi Bawah">
+<nav class="fixed bottom-0 left-0 right-0 z-40 max-w-lg mx-auto bg-white/95 backdrop-blur-lg rounded-t-3xl border-t border-x border-slate-200/80 shadow-[0_-6px_25px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]" aria-label="Navigasi Bawah">
     <div class="grid grid-cols-5 h-16 items-center px-1">
         <!-- 1. Home -->
         <a href="{{ route('dashboard') }}"
