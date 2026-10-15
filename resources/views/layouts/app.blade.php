@@ -171,7 +171,9 @@
         <x-drawer />
 
         <!-- Fixed Bottom Navigation Bar (Primary screens only) -->
-        <x-bottom-navigation />
+        @unless(request()->routeIs('login'))
+            <x-bottom-navigation />
+        @endunless
 
     </div>
 

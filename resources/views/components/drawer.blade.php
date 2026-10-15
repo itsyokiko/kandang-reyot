@@ -6,16 +6,30 @@
        class="fixed top-0 bottom-0 right-0 z-50 w-80 max-w-[85vw] bg-white shadow-2xl flex flex-col translate-x-full transition-transform duration-300 ease-out">
     <!-- Header Drawer -->
     <div class="p-4 bg-emerald-800 text-white flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <span class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-2xl shadow-inner">🐐</span>
-            <div>
-                <h3 class="font-extrabold text-sm leading-tight tracking-tight">Kandang Reyot</h3>
-                <p class="text-[11px] text-emerald-200">Menu Sekunder & Pengaturan</p>
+        @auth
+            <div class="flex items-center gap-3 min-w-0">
+                @if(Auth::user()->avatar)
+                    <img src="{{ Auth::user()->avatar }}" alt="{{ Auth::user()->name }}" class="w-10 h-10 rounded-2xl object-cover border border-white/20 shadow-inner flex-shrink-0">
+                @else
+                    <span class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-2xl shadow-inner flex-shrink-0">🐐</span>
+                @endif
+                <div class="min-w-0 flex-1">
+                    <h3 class="font-extrabold text-sm leading-tight tracking-tight truncate">{{ Auth::user()->name }}</h3>
+                    <p class="text-[11px] text-emerald-200 truncate">{{ Auth::user()->email }}</p>
+                </div>
             </div>
-        </div>
+        @else
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-2xl shadow-inner">🐐</span>
+                <div>
+                    <h3 class="font-extrabold text-sm leading-tight tracking-tight">Kandang Reyot</h3>
+                    <p class="text-[11px] text-emerald-200">Menu Sekunder & Pengaturan</p>
+                </div>
+            </div>
+        @endauth
         <button type="button"
                 onclick="toggleAppDrawer()"
-                class="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white active:scale-95 transition"
+                class="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white active:scale-95 transition flex-shrink-0"
                 aria-label="Tutup Menu">
             <i class="ti ti-x text-lg"></i>
         </button>
@@ -85,6 +99,39 @@
                         <span class="text-[10px] text-slate-400 font-normal">PWA versi 1.0</span>
                     </div>
                 </button>
+            </div>
+        </div>
+
+        <!-- 4. AKUN PENGGUNA -->
+        <div>
+            <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 block mb-1.5">AKUN & SESI</span>
+            <div class="space-y-1">
+                @auth
+                    <form action="{{ route('logout') }}" method="POST" onsubmit="return confirmDelete(event, this, 'Keluar Akun?', 'Apakah Anda yakin ingin mengakhiri sesi login?');">
+                        @csrf
+                        <button type="submit"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 active:scale-98 transition text-left">
+                            <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-base">
+                                <i class="ti ti-logout"></i>
+                            </div>
+                            <div>
+                                <span class="block text-rose-700 font-bold">Keluar (Logout)</span>
+                                <span class="text-[10px] text-slate-400 font-normal">Akhiri sesi login</span>
+                            </div>
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" onclick="toggleAppDrawer()"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 active:scale-98 transition">
+                        <div class="w-8 h-8 rounded-lg bg-white text-emerald-700 flex items-center justify-center text-base shadow-2xs">
+                            <i class="ti ti-login"></i>
+                        </div>
+                        <div>
+                            <span class="block text-emerald-950 font-bold">Masuk dengan Google</span>
+                            <span class="text-[10px] text-emerald-700 font-normal">Hubungkan akun Google</span>
+                        </div>
+                    </a>
+                @endauth
             </div>
         </div>
     </div>
