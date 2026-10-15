@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full bg-slate-950">
+<html lang="id" class="h-full bg-slate-50 sm:bg-slate-950">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -16,6 +16,29 @@
 
     <!-- [Favicon] -->
     <link rel="icon" href="{{ asset('assets/dist/assets/images/favicon.svg') }}" type="image/x-icon">
+
+    <!-- [Instant Navigation Speculation Rules] -->
+    <script type="speculationrules">
+    {
+      "prefetch": [
+        {
+          "source": "list",
+          "urls": [
+            "{{ route('dashboard') }}",
+            "{{ route('kambings.index') }}",
+            "{{ route('pengingat-perawatan.index') }}",
+            "{{ route('silsilah.index') }}",
+            "{{ route('perkawinans.index') }}",
+            "{{ route('kelahirans.index') }}",
+            "{{ route('kesiapan-kawin.index') }}",
+            "{{ route('riwayat-sakit.index') }}",
+            "{{ route('semprot-kandang.index') }}"
+          ],
+          "eagerness": "moderate"
+        }
+      ]
+    }
+    </script>
 
     <!-- [Google Font] Public Sans -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&display=swap">
@@ -146,10 +169,10 @@
         }
     </style>
 </head>
-<body class="h-full bg-slate-950 antialiased select-none text-slate-800">
+<body class="h-full bg-slate-50 sm:bg-slate-950 antialiased select-none text-slate-800">
 
     <!-- Mobile Device Container Wrapper (Centered on Desktop with native card frame) -->
-    <div class="w-full max-w-lg mx-auto min-h-screen bg-slate-50 relative flex flex-col shadow-2xl border-x border-slate-800/40 overflow-x-clip">
+    <div class="w-full max-w-lg mx-auto min-h-screen min-h-[100dvh] bg-slate-50 relative flex flex-col shadow-2xl border-x border-slate-200/60 sm:border-slate-800/40 overflow-x-clip">
 
         <!-- Top App Header -->
         <x-app-header :title="View::hasSection('title') ? trim(View::getSection('title')) : 'Kandang Reyot'" />
@@ -258,7 +281,35 @@
         window.addEventListener('pageshow', hideAppLoader);
         window.addEventListener('load', hideAppLoader);
 
-        // Auto show loader on internal page navigation links
+        // Instant Page Prefetcher on touch/hover for snappy transitions
+        const prefetchedUrls = new Set();
+        function prefetchPage(url) {
+            if (!url || prefetchedUrls.has(url)) return;
+            try {
+                const u = new URL(url, window.location.origin);
+                if (u.origin !== window.location.origin || u.pathname === window.location.pathname) return;
+                prefetchedUrls.add(url);
+                const link = document.createElement('link');
+                link.rel = 'prefetch';
+                link.href = url;
+                link.as = 'document';
+                document.head.appendChild(link);
+            } catch (e) {}
+        }
+
+        // Prefetch on pointer hover / touch start (natural 100-200ms lead before click)
+        document.addEventListener('pointerover', function(e) {
+            const link = e.target.closest('a');
+            if (link && link.href) prefetchPage(link.href);
+        }, { passive: true });
+
+        document.addEventListener('touchstart', function(e) {
+            const link = e.target.closest('a');
+            if (link && link.href) prefetchPage(link.href);
+        }, { passive: true });
+
+        // Auto show loader on internal page navigation links (debounced 140ms so cached pages load without flicker)
+        let navLoaderDebounce = null;
         document.addEventListener('click', function(e) {
             const link = e.target.closest('a');
             if (!link) return;
@@ -273,7 +324,10 @@
             try {
                 const url = new URL(href, window.location.origin);
                 if (url.origin === window.location.origin && (url.pathname !== window.location.pathname || url.search !== window.location.search)) {
-                    showAppLoader('Memuat Halaman...', 'Menyiapkan tampilan...');
+                    clearTimeout(navLoaderDebounce);
+                    navLoaderDebounce = setTimeout(() => {
+                        showAppLoader('Memuat Halaman...', 'Menyiapkan tampilan...');
+                    }, 140);
                 }
             } catch (err) {}
         });
