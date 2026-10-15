@@ -155,56 +155,44 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil Masuk!',
-                            text: 'Selamat datang kembali, ' + (user.displayName || 'Peternak'),
-                            timer: 1600,
-                            showConfirmButton: false,
-                            customClass: {
-                                popup: 'rounded-3xl border border-slate-100 shadow-2xl'
-                            }
-                        });
-                    }
-
-                    setTimeout(() => {
+                    hideAppLoader();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil Masuk!',
+                        text: 'Selamat datang, ' + (user.displayName || 'Peternak') + '!',
+                        timer: 1500,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                        allowOutsideClick: false,
+                        customClass: { popup: 'swal-compact rounded-3xl border border-slate-100 shadow-2xl' }
+                    }).then(() => {
                         window.location.href = data.redirect || "{{ route('dashboard') }}";
-                    }, 1000);
+                    });
                 } else {
-                    if (typeof hideAppLoader === 'function') hideAppLoader();
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal Masuk',
-                            text: data.message || 'Terjadi kesalahan saat memverifikasi sesi login.',
-                            confirmButtonColor: '#059669',
-                            customClass: {
-                                popup: 'rounded-3xl border border-slate-100 shadow-2xl'
-                            }
-                        });
-                    }
+                    hideAppLoader();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Masuk',
+                        text: data.message || 'Terjadi kesalahan saat memverifikasi sesi login.',
+                        confirmButtonColor: '#059669',
+                        customClass: { popup: 'swal-compact rounded-3xl border border-slate-100 shadow-2xl' }
+                    });
                 }
             } catch (error) {
-                if (typeof hideAppLoader === 'function') hideAppLoader();
+                hideAppLoader();
 
                 if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-                    // User closed the popup, silently return
                     return;
                 }
 
                 console.error('Firebase Auth Error:', error);
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Autentikasi Gagal',
-                        text: error.message || 'Tidak dapat menyelesaikan proses masuk dengan Google.',
-                        confirmButtonColor: '#059669',
-                        customClass: {
-                            popup: 'rounded-3xl border border-slate-100 shadow-2xl'
-                        }
-                    });
-                }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Autentikasi Gagal',
+                    text: error.message || 'Tidak dapat menyelesaikan proses masuk dengan Google.',
+                    confirmButtonColor: '#059669',
+                    customClass: { popup: 'swal-compact rounded-3xl border border-slate-100 shadow-2xl' }
+                });
             }
         });
     }

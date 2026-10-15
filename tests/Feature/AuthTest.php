@@ -10,6 +10,13 @@ class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Override: skip auto-login — this class tests both guest and auth states explicitly
+    protected function setUp(): void
+    {
+        // Call grandparent setUp only (skip the auto-login in Tests\TestCase)
+        \Illuminate\Foundation\Testing\TestCase::setUp();
+    }
+
     public function test_can_view_login_page()
     {
         $response = $this->get(route('login'));

@@ -121,6 +121,29 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
+        /* Compact SweetAlert2 for mobile */
+        .swal2-container.swal2-center > .swal2-popup.swal-compact,
+        .swal-compact {
+            max-width: 300px !important;
+            font-size: 13px !important;
+            padding: 1.2rem !important;
+        }
+        .swal-compact .swal2-title {
+            font-size: 1rem !important;
+        }
+        .swal-compact .swal2-html-container,
+        .swal-compact .swal2-content {
+            font-size: 0.78rem !important;
+        }
+        .swal-compact .swal2-icon {
+            width: 3.5rem !important;
+            height: 3.5rem !important;
+            margin: 0.5rem auto 0.75rem !important;
+        }
+        .swal-compact .swal2-icon .swal2-icon-content {
+            font-size: 2rem !important;
+        }
     </style>
 </head>
 <body class="h-full bg-slate-950 antialiased select-none text-slate-800">
@@ -255,53 +278,55 @@
             } catch (err) {}
         });
 
-        // Auto show loader on form submit (unless opted out)
+        // Auto show loader on form submit (skip forms that have a Swal confirm handler)
         document.addEventListener('submit', function(e) {
             const form = e.target;
             if (form.classList.contains('no-loader')) return;
+            if (form.hasAttribute('data-swal-confirm')) return; // handled by confirmDelete
             showAppLoader('Menyimpan Data...', 'Sedang memproses permintaan...');
         });
 
-        // Global SweetAlert Confirm Delete Helper
-        window.confirmDelete = function(event, form, title = 'Hapus Data?', text = 'Data yang dihapus tidak dapat dikembalikan.') {
-            if (event && event.preventDefault) {
-                event.preventDefault();
-            }
+        // Global SweetAlert Confirm Helper (delete / logout / destructive actions)
+        window.confirmDelete = function(event, form, title = 'Hapus Data?', text = 'Data yang dihapus tidak dapat dikembalikan.', confirmText = 'Ya, Hapus!') {
+            if (event && event.preventDefault) event.preventDefault();
+            form.setAttribute('data-swal-confirm', '1');
+
             Swal.fire({
-                title: title,
-                text: text,
+                title,
+                text,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#e11d48',
                 cancelButtonColor: '#64748b',
-                confirmButtonText: 'Ya, Hapus!',
+                confirmButtonText: confirmText,
                 cancelButtonText: 'Batal',
                 reverseButtons: true,
                 customClass: {
-                    popup: 'rounded-3xl border border-slate-100 shadow-2xl',
+                    popup: 'swal-compact rounded-3xl border border-slate-100 shadow-2xl',
                     confirmButton: 'rounded-xl font-bold px-4 py-2.5 text-xs',
                     cancelButton: 'rounded-xl font-medium px-4 py-2.5 text-xs'
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    showAppLoader('Menghapus Data...', 'Sedang menghapus record...');
+                    showAppLoader('Memproses...', 'Mohon tunggu sebentar...');
                     form.submit();
+                } else {
+                    form.removeAttribute('data-swal-confirm');
                 }
             });
             return false;
         };
 
-        // SweetAlert Flash Notifications
+        // SweetAlert Flash Notifications (compact)
         @if (session('success'))
             Swal.fire({
                 icon: 'success',
                 title: 'Berhasil!',
                 text: {!! json_encode(session('success')) !!},
-                timer: 2400,
+                timer: 2200,
+                timerProgressBar: true,
                 showConfirmButton: false,
-                customClass: {
-                    popup: 'rounded-3xl border border-slate-100 shadow-2xl'
-                }
+                customClass: { popup: 'swal-compact rounded-3xl border border-slate-100 shadow-2xl' }
             });
         @endif
 
@@ -312,9 +337,7 @@
                 text: {!! json_encode(session('error')) !!},
                 confirmButtonColor: '#059669',
                 confirmButtonText: 'Tutup',
-                customClass: {
-                    popup: 'rounded-3xl border border-slate-100 shadow-2xl'
-                }
+                customClass: { popup: 'swal-compact rounded-3xl border border-slate-100 shadow-2xl' }
             });
         @endif
     </script>

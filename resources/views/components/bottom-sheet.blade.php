@@ -3,18 +3,29 @@
     'title' => null,
 ])
 
+{{-- Overlay: truly hidden until opened --}}
 <div id="{{ $id }}Overlay"
      onclick="closeBottomSheet('{{ $id }}')"
-     class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs opacity-0 pointer-events-none transition-opacity duration-300"></div>
+     class="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xs opacity-0 invisible pointer-events-none transition-[opacity,visibility] duration-300"
+     aria-hidden="true"></div>
 
+{{-- Sheet: invisible + translated off-screen until opened --}}
 <div id="{{ $id }}"
-     class="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto bg-white rounded-t-3xl shadow-2xl translate-y-full transition-transform duration-300 ease-out flex flex-col max-h-[90vh] pb-[env(safe-area-inset-bottom)]">
-    <!-- Handle bar -->
+     class="fixed bottom-0 left-0 right-0 z-[201] max-w-lg mx-auto bg-white rounded-t-3xl shadow-2xl
+            translate-y-full invisible
+            transition-[transform,visibility] duration-300 ease-out
+            flex flex-col max-h-[90vh]
+            pb-[env(safe-area-inset-bottom)]"
+     aria-modal="true"
+     role="dialog"
+     aria-label="{{ $title ?? 'Panel' }}">
+
+    {{-- Handle bar --}}
     <div class="pt-3 pb-1 flex justify-center cursor-pointer" onclick="closeBottomSheet('{{ $id }}')">
         <div class="w-12 h-1.5 rounded-full bg-slate-200"></div>
     </div>
 
-    <!-- Header -->
+    {{-- Header --}}
     @if($title)
         <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
             <h3 class="text-base font-bold text-slate-900 tracking-tight">{{ $title }}</h3>
@@ -27,7 +38,7 @@
         </div>
     @endif
 
-    <!-- Content -->
+    {{-- Content --}}
     <div class="p-5 overflow-y-auto space-y-4">
         {{ $slot }}
     </div>
@@ -36,18 +47,19 @@
 <script>
     if (typeof openBottomSheet === 'undefined') {
         function openBottomSheet(sheetId) {
-            const sheet = document.getElementById(sheetId);
+            const sheet   = document.getElementById(sheetId);
             const overlay = document.getElementById(sheetId + 'Overlay');
             if (!sheet || !overlay) return;
 
-            sheet.classList.remove('translate-y-full');
-            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            // Make visible first so transition plays
+            sheet.classList.remove('invisible', 'translate-y-full');
+            overlay.classList.remove('invisible', 'opacity-0', 'pointer-events-none');
             overlay.classList.add('opacity-100');
             document.body.classList.add('overflow-hidden');
         }
 
         function closeBottomSheet(sheetId) {
-            const sheet = document.getElementById(sheetId);
+            const sheet   = document.getElementById(sheetId);
             const overlay = document.getElementById(sheetId + 'Overlay');
             if (!sheet || !overlay) return;
 
@@ -55,6 +67,13 @@
             overlay.classList.remove('opacity-100');
             overlay.classList.add('opacity-0', 'pointer-events-none');
             document.body.classList.remove('overflow-hidden');
+
+            // After transition finishes, set invisible so it can't peek through scroll
+            const dur = 320;
+            setTimeout(() => {
+                sheet.classList.add('invisible');
+                overlay.classList.add('invisible');
+            }, dur);
         }
     }
 </script>

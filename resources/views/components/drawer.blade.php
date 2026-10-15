@@ -107,7 +107,7 @@
             <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 block mb-1.5">AKUN & SESI</span>
             <div class="space-y-1">
                 @auth
-                    <form action="{{ route('logout') }}" method="POST" onsubmit="return confirmDelete(event, this, 'Keluar Akun?', 'Apakah Anda yakin ingin mengakhiri sesi login?');">
+                    <form action="{{ route('logout') }}" method="POST" onsubmit="return confirmDelete(event, this, 'Keluar Akun?', 'Apakah Anda yakin ingin mengakhiri sesi login?', 'Ya, Keluar');">
                         @csrf
                         <button type="submit"
                                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 active:scale-98 transition text-left">
