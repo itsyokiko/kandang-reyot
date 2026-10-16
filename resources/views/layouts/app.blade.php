@@ -259,18 +259,85 @@
             });
         }
 
-        // Update --vh so bottom sheets (max-h-[100dvh]) resize correctly when keyboard appears
-        // ponytail: visualViewport not available in all old Android WebViews, fallback to innerHeight
-        function updateVh() {
+        // --vh: keeps bottom sheets sized to visible viewport (shrinks when soft keyboard appears)
+        // ponytail: visualViewport API covers modern Android/iOS; fallback for older WebViews
+        function _updateVh() {
             const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
             document.documentElement.style.setProperty('--vh', (h * 0.01) + 'px');
         }
-        updateVh();
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', updateVh);
-        } else {
-            window.addEventListener('resize', updateVh);
-        }
+        _updateVh();
+        (window.visualViewport || window).addEventListener('resize', _updateVh);
+
+        // ─── KR: global Kandang Reyot namespace ───────────────────────────────
+        window.KR = window.KR || {};
+
+        // Body scroll lock that works on iOS Safari (overflow:hidden doesn't block touch scroll)
+        let _scrollY = 0;
+        KR.lockScroll = function() {
+            _scrollY = window.scrollY;
+            document.body.style.cssText += ';position:fixed;top:-' + _scrollY + 'px;left:0;right:0;overflow-y:scroll';
+        };
+        KR.unlockScroll = function() {
+            document.body.style.cssText = document.body.style.cssText
+                .replace(/position:fixed;top:-?\d+px;left:0;right:0;overflow-y:scroll/g, '');
+            window.scrollTo(0, _scrollY);
+        };
+
+        // Bottom sheet controller
+        KR._openSheets = new Set();
+        KR.sheet = {
+            open(sheetId) {
+                const sheet   = document.getElementById(sheetId);
+                const overlay = document.getElementById(sheetId + 'Overlay');
+                if (!sheet || !overlay) return;
+
+                KR._openSheets.add(sheetId);
+
+                // Hide bottom nav
+                const nav = document.getElementById('appBottomNav');
+                if (nav) nav.style.cssText = 'transform:translateY(100%);opacity:0;pointer-events:none';
+
+                // Reveal sheet & overlay
+                sheet.classList.remove('invisible', 'translate-y-full');
+                overlay.classList.remove('invisible', 'opacity-0', 'pointer-events-none');
+                overlay.classList.add('opacity-100');
+
+                KR.lockScroll();
+
+                // Reset scroll to top
+                const body = sheet.querySelector('.overflow-y-auto');
+                if (body) body.scrollTop = 0;
+            },
+
+            close(sheetId) {
+                const sheet   = document.getElementById(sheetId);
+                const overlay = document.getElementById(sheetId + 'Overlay');
+                if (!sheet || !overlay) return;
+
+                KR._openSheets.delete(sheetId);
+
+                // Slide sheet out, fade overlay
+                sheet.classList.add('translate-y-full');
+                overlay.classList.remove('opacity-100');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+
+                // Restore scroll & bottom nav only when all sheets closed
+                if (KR._openSheets.size === 0) {
+                    KR.unlockScroll();
+                    const nav = document.getElementById('appBottomNav');
+                    if (nav) nav.style.cssText = '';
+                }
+
+                setTimeout(() => {
+                    sheet.classList.add('invisible');
+                    overlay.classList.add('invisible');
+                }, 320);
+            }
+        };
+
+        // Backward-compat aliases (used in onclick attributes throughout views)
+        window.openBottomSheet  = (id) => KR.sheet.open(id);
+        window.closeBottomSheet = (id) => KR.sheet.close(id);
 
         // Global Centered Loader Controller
         let loaderTimer = null;
