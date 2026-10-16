@@ -37,14 +37,18 @@
                 </a>
             @endif
 
-            <div>
-                <h1 class="text-base font-bold tracking-tight text-white leading-tight flex items-center gap-2">
-                    {{ request()->routeIs('dashboard') ? 'Dashboard' : $title }}
-                </h1>
-                @if($subtitle && !request()->routeIs('dashboard'))
-                    <p class="text-[11px] text-emerald-100 font-medium leading-none mt-0.5">{{ $subtitle }}</p>
-                @endif
-            </div>
+            {{-- Title: only show on dashboard. Other pages have their own h1 in content. --}}
+            @if(request()->routeIs('dashboard'))
+                <div>
+                    <h1 class="text-base font-bold tracking-tight text-white leading-tight">
+                        Kandang Reyot
+                    </h1>
+                </div>
+            @elseif($subtitle)
+                <div>
+                    <p class="text-xs text-emerald-100 font-medium leading-none">{{ $subtitle }}</p>
+                </div>
+            @endif
         </div>
 
         <div class="flex items-center gap-2">

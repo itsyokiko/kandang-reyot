@@ -22,13 +22,15 @@
      class="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xs opacity-0 invisible pointer-events-none transition-[opacity,visibility] duration-300"
      aria-hidden="true"></div>
 
-{{-- Sheet: invisible + translated off-screen until opened --}}
+{{-- Sheet: slides up from bottom. max-h caps total height; inner flex layout distributes space. --}}
+{{-- Data sheets use 100dvh so keyboard + browser bars don't clip content. --}}
 <div id="{{ $id }}"
      class="fixed bottom-0 left-0 right-0 z-[201] max-w-lg mx-auto bg-white rounded-t-3xl shadow-2xl
             translate-y-full invisible
             transition-[transform,visibility] duration-300 ease-out
-            flex flex-col h-auto {{ $isDataSheet ? 'max-h-[100dvh] max-h-[100vh] sm:max-h-[92vh]' : 'max-h-[85vh] max-h-[85dvh]' }}
+            flex flex-col {{ $isDataSheet ? '' : 'max-h-[85dvh]' }}
             overflow-hidden will-change-transform"
+     @if($isDataSheet) style="max-height: calc(var(--vh, 1dvh) * 100);" @endif
      aria-modal="true"
      role="dialog"
      aria-label="{{ $title ?? 'Panel' }}">
@@ -51,9 +53,20 @@
         </div>
     @endif
 
-    {{-- Content: flex-1 min-h-0 allows proper scrolling across all mobile browsers --}}
-    {{-- For data/input sheets, 3rem (pb-12) plus safe-area is applied so bottom elements are never truncated by browser bars --}}
-    <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 {{ $isDataSheet ? 'pb-12 pb-[calc(3rem+env(safe-area-inset-bottom,0px))]' : 'pb-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]' }} space-y-4"
+    {{--
+        Scrollable content area.
+        flex-1 min-h-0 is critical: without min-h-0, flex children default to min-height:auto
+        which prevents overflow scroll on WebKit/Safari.
+
+        Bottom padding:
+        - Data sheets: safe-area-inset-bottom so content doesn't hide behind iOS home bar.
+          We do NOT add extra padding for bottom nav because it's hidden when sheet is open.
+        - Info sheets: minimal safe area.
+    --}}
+    <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pt-4 space-y-4
+                {{ $isDataSheet
+                    ? 'pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]'
+                    : 'pb-[max(1rem,env(safe-area-inset-bottom,0px))]' }}"
          style="-webkit-overflow-scrolling: touch; touch-action: pan-y;">
         {{ $slot }}
     </div>
@@ -61,28 +74,31 @@
 
 <script>
     if (typeof openBottomSheet === 'undefined') {
+        // Track how many sheets are open so we restore bottom nav only when all are closed
+        window._openSheets = window._openSheets || new Set();
+
         function openBottomSheet(sheetId) {
             const sheet   = document.getElementById(sheetId);
             const overlay = document.getElementById(sheetId + 'Overlay');
             if (!sheet || !overlay) return;
 
-            // Animate Bottom Navigation out (slide down and fade)
+            window._openSheets.add(sheetId);
+
+            // Hide Bottom Navigation (slide down)
             const bottomNav = document.getElementById('appBottomNav');
             if (bottomNav) {
                 bottomNav.classList.add('translate-y-full', 'opacity-0', 'pointer-events-none');
             }
 
-            // Make sheet visible and slide up
+            // Show sheet & overlay
             sheet.classList.remove('invisible', 'translate-y-full');
             overlay.classList.remove('invisible', 'opacity-0', 'pointer-events-none');
             overlay.classList.add('opacity-100');
             document.body.classList.add('overflow-hidden');
 
-            // Reset scroll position to top
+            // Always start from top
             const scrollArea = sheet.querySelector('.overflow-y-auto');
-            if (scrollArea) {
-                scrollArea.scrollTop = 0;
-            }
+            if (scrollArea) scrollArea.scrollTop = 0;
         }
 
         function closeBottomSheet(sheetId) {
@@ -90,24 +106,27 @@
             const overlay = document.getElementById(sheetId + 'Overlay');
             if (!sheet || !overlay) return;
 
-            // Slide down sheet and fade overlay
+            window._openSheets.delete(sheetId);
+
+            // Slide sheet down & fade overlay
             sheet.classList.add('translate-y-full');
             overlay.classList.remove('opacity-100');
             overlay.classList.add('opacity-0', 'pointer-events-none');
-            document.body.classList.remove('overflow-hidden');
 
-            // Animate Bottom Navigation back in (slide up and restore)
-            const bottomNav = document.getElementById('appBottomNav');
-            if (bottomNav) {
-                bottomNav.classList.remove('translate-y-full', 'opacity-0', 'pointer-events-none');
+            // Only unlock body scroll + restore bottom nav when no sheet is open
+            if (window._openSheets.size === 0) {
+                document.body.classList.remove('overflow-hidden');
+                const bottomNav = document.getElementById('appBottomNav');
+                if (bottomNav) {
+                    bottomNav.classList.remove('translate-y-full', 'opacity-0', 'pointer-events-none');
+                }
             }
 
-            // After transition finishes, set invisible so it can't peek through scroll
-            const dur = 320;
+            // After transition, truly hide elements
             setTimeout(() => {
                 sheet.classList.add('invisible');
                 overlay.classList.add('invisible');
-            }, dur);
+            }, 320);
         }
     }
 </script>

@@ -168,7 +168,17 @@
         .swal-compact .swal2-icon .swal2-icon-content {
             font-size: 2rem !important;
         }
+
+        /*
+         * Bottom sheet visual viewport fix.
+         * When the soft keyboard opens, window.innerHeight shrinks but dvh units
+         * may not update on older Android. We set --vh via JS below and use it.
+         */
+        .bottom-sheet-host {
+            max-height: calc(var(--vh, 1dvh) * 100);
+        }
     </style>
+
 </head>
 <body class="h-full bg-slate-50 sm:bg-slate-950 antialiased select-none text-slate-800">
 
@@ -247,6 +257,19 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
             });
+        }
+
+        // Update --vh so bottom sheets (max-h-[100dvh]) resize correctly when keyboard appears
+        // ponytail: visualViewport not available in all old Android WebViews, fallback to innerHeight
+        function updateVh() {
+            const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            document.documentElement.style.setProperty('--vh', (h * 0.01) + 'px');
+        }
+        updateVh();
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', updateVh);
+        } else {
+            window.addEventListener('resize', updateVh);
         }
 
         // Global Centered Loader Controller

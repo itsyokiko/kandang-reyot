@@ -6,8 +6,8 @@
     'actionHref' => null,
 ])
 
-<div {{ $attributes->merge(['class' => 'bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center my-4']) }}>
-    <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 text-3xl shadow-inner">
+<div {{ $attributes->merge(['class' => 'bg-white rounded-2xl border border-dashed border-slate-300 px-6 py-8 text-center my-2']) }}>
+    <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner">
         @if(str_starts_with($icon, 'ti '))
             <i class="{{ $icon }}"></i>
         @else
@@ -32,3 +32,4 @@
 
     {{ $slot }}
 </div>
+
