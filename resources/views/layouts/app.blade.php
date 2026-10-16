@@ -259,8 +259,8 @@
             });
         }
 
-        // --vh: keeps bottom sheets sized to visible viewport (shrinks when soft keyboard appears)
-        // ponytail: visualViewport API covers modern Android/iOS; fallback for older WebViews
+        // --vh: visual viewport height in px/100, updated when keyboard appears/disappears
+        // Bottom sheets use calc(var(--vh)*80) for accurate sizing on all browsers
         function _updateVh() {
             const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
             document.documentElement.style.setProperty('--vh', (h * 0.01) + 'px');
@@ -268,74 +268,70 @@
         _updateVh();
         (window.visualViewport || window).addEventListener('resize', _updateVh);
 
-        // ─── KR: global Kandang Reyot namespace ───────────────────────────────
-        window.KR = window.KR || {};
+        // ── KR namespace ────────────────────────────────────────────────────────
+        window.KR = {};
 
-        // Body scroll lock that works on iOS Safari (overflow:hidden doesn't block touch scroll)
-        let _scrollY = 0;
-        KR.lockScroll = function() {
-            _scrollY = window.scrollY;
-            document.body.style.cssText += ';position:fixed;top:-' + _scrollY + 'px;left:0;right:0;overflow-y:scroll';
-        };
-        KR.unlockScroll = function() {
-            document.body.style.cssText = document.body.style.cssText
-                .replace(/position:fixed;top:-?\d+px;left:0;right:0;overflow-y:scroll/g, '');
-            window.scrollTo(0, _scrollY);
-        };
-
-        // Bottom sheet controller
-        KR._openSheets = new Set();
         KR.sheet = {
-            open(sheetId) {
-                const sheet   = document.getElementById(sheetId);
-                const overlay = document.getElementById(sheetId + 'Overlay');
-                if (!sheet || !overlay) return;
+            open(id) {
+                const el = document.getElementById(id);
+                const ov = document.getElementById(id + 'Overlay');
+                if (!el) return;
 
-                KR._openSheets.add(sheetId);
-
-                // Hide bottom nav
+                // Hide bottom nav using direct style (no Tailwind class toggling)
                 const nav = document.getElementById('appBottomNav');
-                if (nav) nav.style.cssText = 'transform:translateY(100%);opacity:0;pointer-events:none';
+                if (nav) {
+                    nav.style.transform  = 'translateY(110%)';
+                    nav.style.opacity    = '0';
+                    nav.style.pointerEvents = 'none';
+                }
 
-                // Reveal sheet & overlay
-                sheet.classList.remove('invisible', 'translate-y-full');
-                overlay.classList.remove('invisible', 'opacity-0', 'pointer-events-none');
-                overlay.classList.add('opacity-100');
+                // Show sheet
+                el.style.transform  = 'translateY(0)';
+                el.style.visibility = 'visible';
 
-                KR.lockScroll();
+                // Show overlay
+                if (ov) {
+                    ov.style.opacity     = '1';
+                    ov.style.visibility  = 'visible';
+                    ov.style.pointerEvents = 'auto';
+                }
 
-                // Reset scroll to top
-                const body = sheet.querySelector('.overflow-y-auto');
+                // Scroll content back to top
+                const body = el.querySelector('[data-sheet-body]');
                 if (body) body.scrollTop = 0;
             },
 
-            close(sheetId) {
-                const sheet   = document.getElementById(sheetId);
-                const overlay = document.getElementById(sheetId + 'Overlay');
-                if (!sheet || !overlay) return;
+            close(id) {
+                const el = document.getElementById(id);
+                const ov = document.getElementById(id + 'Overlay');
+                if (!el) return;
 
-                KR._openSheets.delete(sheetId);
+                // Slide sheet away
+                el.style.transform = 'translateY(100%)';
 
-                // Slide sheet out, fade overlay
-                sheet.classList.add('translate-y-full');
-                overlay.classList.remove('opacity-100');
-                overlay.classList.add('opacity-0', 'pointer-events-none');
-
-                // Restore scroll & bottom nav only when all sheets closed
-                if (KR._openSheets.size === 0) {
-                    KR.unlockScroll();
-                    const nav = document.getElementById('appBottomNav');
-                    if (nav) nav.style.cssText = '';
+                // Fade overlay
+                if (ov) {
+                    ov.style.opacity     = '0';
+                    ov.style.pointerEvents = 'none';
                 }
 
+                // Restore bottom nav
+                const nav = document.getElementById('appBottomNav');
+                if (nav) {
+                    nav.style.transform  = '';
+                    nav.style.opacity    = '';
+                    nav.style.pointerEvents = '';
+                }
+
+                // After transition, fully hide (prevents stray touch through)
                 setTimeout(() => {
-                    sheet.classList.add('invisible');
-                    overlay.classList.add('invisible');
+                    el.style.visibility = 'hidden';
+                    if (ov) ov.style.visibility = 'hidden';
                 }, 320);
             }
         };
 
-        // Backward-compat aliases (used in onclick attributes throughout views)
+        // Backward-compat: views still call openBottomSheet() / closeBottomSheet()
         window.openBottomSheet  = (id) => KR.sheet.open(id);
         window.closeBottomSheet = (id) => KR.sheet.close(id);
 
