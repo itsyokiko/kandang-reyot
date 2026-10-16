@@ -1,7 +1,20 @@
 @props([
     'id',
     'title' => null,
+    'type' => null, // 'data', 'info', atau auto-detect
 ])
+
+@php
+    $isDataSheet = ($type === 'data') || (
+        $type !== 'info' && (
+            str_contains($id, 'Tambah') ||
+            str_contains($id, 'Edit') ||
+            str_contains($id, 'Atur') ||
+            str_contains($id, 'Konfirmasi') ||
+            str_contains($id, 'Relasi')
+        )
+    );
+@endphp
 
 {{-- Overlay: truly hidden until opened --}}
 <div id="{{ $id }}Overlay"
@@ -14,7 +27,7 @@
      class="fixed bottom-0 left-0 right-0 z-[201] max-w-lg mx-auto bg-white rounded-t-3xl shadow-2xl
             translate-y-full invisible
             transition-[transform,visibility] duration-300 ease-out
-            flex flex-col h-auto max-h-[85vh] max-h-[85dvh]
+            flex flex-col h-auto {{ $isDataSheet ? 'max-h-[100dvh] max-h-[100vh] sm:max-h-[92vh]' : 'max-h-[85vh] max-h-[85dvh]' }}
             overflow-hidden will-change-transform"
      aria-modal="true"
      role="dialog"
@@ -39,7 +52,8 @@
     @endif
 
     {{-- Content: flex-1 min-h-0 allows proper scrolling across all mobile browsers --}}
-    <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] space-y-4"
+    {{-- For data/input sheets, 3rem (pb-12) plus safe-area is applied so bottom elements are never truncated by browser bars --}}
+    <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 {{ $isDataSheet ? 'pb-12 pb-[calc(3rem+env(safe-area-inset-bottom,0px))]' : 'pb-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]' }} space-y-4"
          style="-webkit-overflow-scrolling: touch; touch-action: pan-y;">
         {{ $slot }}
     </div>
