@@ -103,12 +103,14 @@
 </div>
 
 {{-- FAB: Buat Pengingat Perawatan --}}
-<button type="button"
-        onclick="openBottomSheet('sheetTambahPengingat')"
-        class="fixed z-30 bottom-24 right-4 w-14 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-lg flex items-center justify-center transition-all"
-        aria-label="Buat Pengingat Perawatan">
-    <i class="ti ti-plus text-2xl"></i>
-</button>
+<div class="fixed bottom-20 left-0 right-0 z-30 max-w-lg mx-auto pointer-events-none px-4 flex justify-end transition-all duration-200" data-fab>
+    <button type="button"
+            onclick="openBottomSheet('sheetTambahPengingat')"
+            class="pointer-events-auto w-14 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-xl flex items-center justify-center transition-all focus:outline-none"
+            aria-label="Buat Pengingat Perawatan">
+        <i class="ti ti-plus text-2xl font-bold"></i>
+    </button>
+</div>
 
 {{-- Bottom Sheet --}}
 <x-bottom-sheet id="sheetTambahPengingat" title="Buat Pengingat Perawatan">

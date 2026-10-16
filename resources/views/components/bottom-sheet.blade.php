@@ -20,10 +20,10 @@
 <div id="{{ $id }}Overlay"
      onclick="KR.sheet.close('{{ $id }}')"
      aria-hidden="true"
-     style="position:fixed;inset:0;z-index:200;
+     style="display:none;position:fixed;inset:0;z-index:200;
             background:rgba(15,23,42,.55);
-            opacity:0;visibility:hidden;
-            transition:opacity .28s ease,visibility .28s ease;
+            opacity:0;
+            transition:opacity .28s ease;
             pointer-events:none;"></div>
 
 {{-- Sheet --}}
@@ -38,18 +38,18 @@
      role="dialog"
      aria-modal="true"
      aria-label="{{ $title ?? 'Panel' }}"
-     style="position:fixed;bottom:0;left:0;right:0;z-index:201;
+     style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:201;
             max-width:32rem;margin:0 auto;
             background:#fff;
             border-radius:1.5rem 1.5rem 0 0;
             box-shadow:0 -4px 30px rgba(0,0,0,.15);
-            display:flex;flex-direction:column;
+            flex-direction:column;
             {{ $isDataSheet
                 ? 'height:80vh;height:calc(var(--vh,1vh)*80);'
                 : 'max-height:80vh;max-height:calc(var(--vh,1vh)*80);' }}
             overflow:hidden;
-            transform:translateY(100%);visibility:hidden;
-            transition:transform .3s cubic-bezier(.32,.72,0,1),visibility .3s ease;
+            transform:translateY(100%);
+            transition:transform .3s cubic-bezier(.32,.72,0,1);
             will-change:transform;">
 
     {{-- Drag handle --}}

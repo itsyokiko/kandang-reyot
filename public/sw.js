@@ -1,6 +1,6 @@
 // Service Worker for Kandang Reyot PWA with Smart Caching
-const STATIC_CACHE = 'kandang-static-v4';
-const PAGES_CACHE = 'kandang-pages-v4';
+const STATIC_CACHE = 'kandang-static-v5';
+const PAGES_CACHE = 'kandang-pages-v5';
 
 const PRECACHE_STATIC = [
   '/manifest.json',

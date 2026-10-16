@@ -111,7 +111,7 @@
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
-        /* Subtle page entrance without full reload flash */
+        /* Subtle page entrance without full reload flash (opacity only, no transform to preserve fixed viewport coordinates) */
         .app-screen-content {
             animation: appScreenEnter 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
@@ -119,11 +119,9 @@
         @keyframes appScreenEnter {
             from {
                 opacity: 0.85;
-                transform: translateY(2px);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
             }
         }
 
@@ -277,26 +275,38 @@
                 const ov = document.getElementById(id + 'Overlay');
                 if (!el) return;
 
-                // Hide bottom nav using direct style (no Tailwind class toggling)
+                // 1. Hide bottom nav
                 const nav = document.getElementById('appBottomNav');
                 if (nav) {
-                    nav.style.transform  = 'translateY(110%)';
-                    nav.style.opacity    = '0';
+                    nav.style.transform     = 'translateY(110%)';
+                    nav.style.opacity       = '0';
                     nav.style.pointerEvents = 'none';
                 }
 
-                // Show sheet
-                el.style.transform  = 'translateY(0)';
-                el.style.visibility = 'visible';
+                // 2. Hide active FAB buttons
+                document.querySelectorAll('[data-fab]').forEach(f => {
+                    f.style.transform     = 'scale(0.8)';
+                    f.style.opacity       = '0';
+                    f.style.pointerEvents = 'none';
+                });
 
-                // Show overlay
+                // 3. Show overlay (block first, reflow, then opacity)
                 if (ov) {
-                    ov.style.opacity     = '1';
-                    ov.style.visibility  = 'visible';
+                    ov.style.display       = 'block';
                     ov.style.pointerEvents = 'auto';
+                    ov.offsetHeight; // reflow
+                    ov.style.opacity       = '1';
                 }
 
-                // Scroll content back to top
+                // 4. Show sheet (flex first, reflow, then slide up)
+                el.style.display       = 'flex';
+                el.offsetHeight; // reflow
+                el.style.transform     = 'translateY(0)';
+
+                // 5. Lock background scroll
+                document.body.style.overflow = 'hidden';
+
+                // 6. Reset scroll content back to top
                 const body = el.querySelector('[data-sheet-body]');
                 if (body) body.scrollTop = 0;
             },
@@ -306,27 +316,37 @@
                 const ov = document.getElementById(id + 'Overlay');
                 if (!el) return;
 
-                // Slide sheet away
+                // 1. Slide sheet away
                 el.style.transform = 'translateY(100%)';
 
-                // Fade overlay
+                // 2. Fade overlay
                 if (ov) {
-                    ov.style.opacity     = '0';
+                    ov.style.opacity       = '0';
                     ov.style.pointerEvents = 'none';
                 }
 
-                // Restore bottom nav
+                // 3. Restore bottom nav
                 const nav = document.getElementById('appBottomNav');
                 if (nav) {
-                    nav.style.transform  = '';
-                    nav.style.opacity    = '';
+                    nav.style.transform     = '';
+                    nav.style.opacity       = '';
                     nav.style.pointerEvents = '';
                 }
 
-                // After transition, fully hide (prevents stray touch through)
+                // 4. Restore active FAB buttons
+                document.querySelectorAll('[data-fab]').forEach(f => {
+                    f.style.transform     = '';
+                    f.style.opacity       = '';
+                    f.style.pointerEvents = '';
+                });
+
+                // 5. Unlock background scroll
+                document.body.style.overflow = '';
+
+                // 6. After transition finishes, remove completely from layout (0px footprint)
                 setTimeout(() => {
-                    el.style.visibility = 'hidden';
-                    if (ov) ov.style.visibility = 'hidden';
+                    el.style.display = 'none';
+                    if (ov) ov.style.display = 'none';
                 }, 320);
             }
         };
