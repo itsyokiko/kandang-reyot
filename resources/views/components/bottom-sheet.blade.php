@@ -4,14 +4,17 @@
     'type' => null,
 ])
 
-{{--
-    Bottom Sheet Component — pure inline CSS, zero Tailwind-CDN dependency for critical layout.
-
-    Height behaviour:
-    - Content kecil  → tinggi = auto (sheet pas dengan konten)
-    - Content besar  → max 80% layar, konten scrollable
-    - Keyboard muncul → --vh var di-update JS agar sheet mengecil ikut viewport
---}}
+@php
+    $isDataSheet = ($type === 'data') || (
+        $type !== 'info' && (
+            str_contains($id, 'Tambah') ||
+            str_contains($id, 'Edit') ||
+            str_contains($id, 'Atur') ||
+            str_contains($id, 'Konfirmasi') ||
+            str_contains($id, 'Relasi')
+        )
+    );
+@endphp
 
 {{-- Overlay --}}
 <div id="{{ $id }}Overlay"
@@ -24,6 +27,13 @@
             pointer-events:none;"></div>
 
 {{-- Sheet --}}
+{{--
+    Data sheet (tambah/edit): height FIXED 80vh — selalu 80% layar, konten scroll di dalamnya.
+    Info sheet: height auto, capped max 80vh — pas dengan konten.
+
+    flex:1 + min-height:0 pada body adalah syarat WAJIB overflow-y:auto bekerja di dalam
+    flex column di Safari/WebKit. Tanpa min-height:0 → tidak bisa scroll.
+--}}
 <div id="{{ $id }}"
      role="dialog"
      aria-modal="true"
@@ -34,8 +44,9 @@
             border-radius:1.5rem 1.5rem 0 0;
             box-shadow:0 -4px 30px rgba(0,0,0,.15);
             display:flex;flex-direction:column;
-            /* 80vh fallback, --vh var di-update JS saat keyboard muncul */
-            max-height:80vh;max-height:calc(var(--vh,1vh)*80);
+            {{ $isDataSheet
+                ? 'height:80vh;height:calc(var(--vh,1vh)*80);'
+                : 'max-height:80vh;max-height:calc(var(--vh,1vh)*80);' }}
             overflow:hidden;
             transform:translateY(100%);visibility:hidden;
             transition:transform .3s cubic-bezier(.32,.72,0,1),visibility .3s ease;
@@ -47,9 +58,9 @@
         <div style="width:48px;height:6px;border-radius:9999px;background:#e2e8f0;"></div>
     </div>
 
-    {{-- Title bar (optional) --}}
+    {{-- Title bar --}}
     @if($title)
-        <div style="padding:10px 20px 10px;border-bottom:1px solid #f1f5f9;
+        <div style="padding:10px 20px;border-bottom:1px solid #f1f5f9;
                     display:flex;align-items:center;justify-content:space-between;
                     flex-shrink:0;">
             <h3 style="font-size:.9rem;font-weight:700;color:#0f172a;letter-spacing:-.01em;margin:0;">
@@ -67,17 +78,10 @@
         </div>
     @endif
 
-    {{--
-        Scrollable body.
-        flex:1 + min-height:0 adalah kombinasi WAJIB agar overflow-y bekerja
-        di dalam flex column (terutama Safari/WebKit).
-
-        Tanpa min-height:0, flex child default ke min-height:auto → tidak bisa scroll.
-    --}}
+    {{-- Scrollable body --}}
     <div data-sheet-body
          style="flex:1;min-height:0;overflow-y:auto;
-                padding:20px 20px;
-                padding-bottom:max(24px,env(safe-area-inset-bottom,0px));
+                padding:20px;
                 -webkit-overflow-scrolling:touch;
                 overscroll-behavior:contain;">
         {{ $slot }}
