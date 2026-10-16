@@ -14,8 +14,8 @@
      class="fixed bottom-0 left-0 right-0 z-[201] max-w-lg mx-auto bg-white rounded-t-3xl shadow-2xl
             translate-y-full invisible
             transition-[transform,visibility] duration-300 ease-out
-            flex flex-col max-h-[90vh] max-h-[90dvh]
-            overflow-hidden"
+            flex flex-col h-auto max-h-[85vh] max-h-[85dvh]
+            overflow-hidden will-change-transform"
      aria-modal="true"
      role="dialog"
      aria-label="{{ $title ?? 'Panel' }}">
@@ -38,9 +38,9 @@
         </div>
     @endif
 
-    {{-- Content: flex-1 min-h-0 allows proper scrolling on all device screens --}}
-    {{-- Bottom padding is measured from bottom-nav height (4rem/64px) + safe area + extra margin so action buttons are clearly visible above bottom nav --}}
-    <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] space-y-4">
+    {{-- Content: flex-1 min-h-0 allows proper scrolling across all mobile browsers --}}
+    <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] space-y-4"
+         style="-webkit-overflow-scrolling: touch; touch-action: pan-y;">
         {{ $slot }}
     </div>
 </div>
@@ -52,11 +52,23 @@
             const overlay = document.getElementById(sheetId + 'Overlay');
             if (!sheet || !overlay) return;
 
-            // Make visible first so transition plays
+            // Animate Bottom Navigation out (slide down and fade)
+            const bottomNav = document.getElementById('appBottomNav');
+            if (bottomNav) {
+                bottomNav.classList.add('translate-y-full', 'opacity-0', 'pointer-events-none');
+            }
+
+            // Make sheet visible and slide up
             sheet.classList.remove('invisible', 'translate-y-full');
             overlay.classList.remove('invisible', 'opacity-0', 'pointer-events-none');
             overlay.classList.add('opacity-100');
             document.body.classList.add('overflow-hidden');
+
+            // Reset scroll position to top
+            const scrollArea = sheet.querySelector('.overflow-y-auto');
+            if (scrollArea) {
+                scrollArea.scrollTop = 0;
+            }
         }
 
         function closeBottomSheet(sheetId) {
@@ -64,10 +76,17 @@
             const overlay = document.getElementById(sheetId + 'Overlay');
             if (!sheet || !overlay) return;
 
+            // Slide down sheet and fade overlay
             sheet.classList.add('translate-y-full');
             overlay.classList.remove('opacity-100');
             overlay.classList.add('opacity-0', 'pointer-events-none');
             document.body.classList.remove('overflow-hidden');
+
+            // Animate Bottom Navigation back in (slide up and restore)
+            const bottomNav = document.getElementById('appBottomNav');
+            if (bottomNav) {
+                bottomNav.classList.remove('translate-y-full', 'opacity-0', 'pointer-events-none');
+            }
 
             // After transition finishes, set invisible so it can't peek through scroll
             const dur = 320;

@@ -59,11 +59,17 @@
                         @endforeach
                     </select>
                     <a id="btn-lihat-profil" href="{{ $kambing ? route('kambings.show', $kambing) : '#' }}"
-                        class="px-3 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition whitespace-nowrap active:scale-95">
+                        class="px-2.5 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition whitespace-nowrap active:scale-95">
                         Profil &rarr;
                     </a>
+                    <a href="{{ route('relasi.index', $kambing ? ['kambing_id' => $kambing->id] : []) }}"
+                        class="px-2.5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs transition flex items-center gap-1 active:scale-95 whitespace-nowrap"
+                        title="Hubungkan Relasi Silsilah">
+                        <i class="ti ti-git-fork text-sm"></i>
+                        <span>+ Relasi</span>
+                    </a>
                     <button type="button" id="btn-enter-landscape"
-                        class="px-3 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-xs transition flex items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                        class="px-2.5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-xs transition flex items-center gap-1 active:scale-95 whitespace-nowrap">
                         <i class="ti ti-layout-distribute-horizontal text-sm"></i>
                         <span>Landscape</span>
                     </button>

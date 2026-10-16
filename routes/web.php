@@ -7,6 +7,7 @@ use App\Http\Controllers\KelahiranController;
 use App\Http\Controllers\KesiapanKawinController;
 use App\Http\Controllers\PengingatPerawatanController;
 use App\Http\Controllers\PerkawinanController;
+use App\Http\Controllers\RelasiController;
 use App\Http\Controllers\RiwayatSakitController;
 use App\Http\Controllers\SemprotKandangController;
 use App\Http\Controllers\SilsilahController;
@@ -43,6 +44,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('silsilah/{kambing?}', [SilsilahController::class, 'index'])->name('silsilah.index');
     Route::get('silsilah/{kambing}/data', [SilsilahController::class, 'data'])->name('silsilah.data');
+
+    // Fitur Relasi Silsilah Manual Mandiri
+    Route::get('/relasi', [RelasiController::class, 'index'])->name('relasi.index');
+    Route::post('/relasi', [RelasiController::class, 'store'])->name('relasi.store');
+    Route::delete('/relasi/{kambing}', [RelasiController::class, 'destroy'])->name('relasi.destroy');
 });
 
 

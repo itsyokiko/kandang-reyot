@@ -53,6 +53,17 @@
                     </div>
                 </button>
 
+                <a href="{{ route('relasi.index') }}" onclick="toggleAppDrawer()"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-98 transition">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center text-base">
+                        <i class="ti ti-git-fork"></i>
+                    </div>
+                    <div>
+                        <span class="block text-slate-900">Relasi Silsilah</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Hubungkan orang tua & anak</span>
+                    </div>
+                </a>
+
                 <a href="{{ route('dashboard') }}#kondisi-kandang" onclick="toggleAppDrawer()"
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-98 transition">
                     <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center text-base">

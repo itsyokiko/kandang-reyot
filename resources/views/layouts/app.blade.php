@@ -32,7 +32,8 @@
             "{{ route('kelahirans.index') }}",
             "{{ route('kesiapan-kawin.index') }}",
             "{{ route('riwayat-sakit.index') }}",
-            "{{ route('semprot-kandang.index') }}"
+            "{{ route('semprot-kandang.index') }}",
+            "{{ route('relasi.index') }}"
           ],
           "eagerness": "moderate"
         }

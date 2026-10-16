@@ -118,9 +118,9 @@
         </div>
     </x-section-card>
 
-    <!-- 2. Orang Tua -->
-    @if ($kambing->induk || $kambing->pejantan)
-        <x-section-card title="Orang Tua" icon="ti ti-users">
+    <!-- 2. Orang Tua & Silsilah -->
+    <x-section-card title="Orang Tua (Silsilah)" icon="ti ti-users" actionText="Atur Relasi" actionHref="{{ route('relasi.index', ['kambing_id' => $kambing->id]) }}">
+        @if ($kambing->induk || $kambing->pejantan)
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="border border-pink-200 bg-pink-50/50 rounded-xl p-3 flex items-center justify-between">
                     <div>
@@ -150,8 +150,19 @@
                     </div>
                 </div>
             </div>
-        </x-section-card>
-    @endif
+        @else
+            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
+                <div>
+                    <span class="text-xs font-bold text-slate-700 block">Belum Terhubung Orang Tua</span>
+                    <span class="text-[11px] text-slate-400">Hubungkan kambing ini ke pejantan dan induk di silsilah kandang.</span>
+                </div>
+                <a href="{{ route('relasi.index', ['kambing_id' => $kambing->id]) }}"
+                   class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs shadow-xs transition shrink-0">
+                    + Hubungkan
+                </a>
+            </div>
+        @endif
+    </x-section-card>
 
     <!-- 3. Riwayat Kelahiran -->
     @php
