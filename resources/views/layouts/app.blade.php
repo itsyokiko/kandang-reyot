@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>{{ config('app.name', 'Kandang Reyot') }} - @yield('title', 'Aplikasi Mobile')</title>
+    <title>Kandang Reyot 🐐</title>
 
     <!-- [PWA Meta Tags] -->
     <meta name="theme-color" content="#047857">
@@ -15,7 +15,7 @@
     <link rel="manifest" href="{{ asset('manifest.json') }}">
 
     <!-- [Favicon] -->
-    <link rel="icon" href="{{ asset('assets/dist/assets/images/favicon.svg') }}" type="image/x-icon">
+    <link rel="icon" href="{{ asset('assets/dist/assets/images/favicon.svg') }}" type="image/svg+xml">
 
     <!-- [Instant Navigation Speculation Rules] -->
     <script type="speculationrules">
@@ -220,7 +220,7 @@
         @endif
 
         <!-- Main Content Area with Seamless Transition & Safe Spacing -->
-        <main class="flex-1 w-full {{ request()->routeIs('dashboard') ? 'px-0 pt-0 pb-28 sm:pb-32' : 'px-3.5 py-4 pb-28 sm:pb-32' }} app-screen-content">
+        <main class="flex-1 w-full {{ request()->routeIs('dashboard') ? 'px-0 pt-0 pb-24' : 'px-3.5 py-4 pb-24' }} app-screen-content">
             @yield('content')
         </main>
 

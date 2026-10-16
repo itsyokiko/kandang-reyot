@@ -3,18 +3,11 @@
 @section('title', 'Daftar Pengingat Perawatan')
 
 @section('content')
-<div class="space-y-4">
-    <!-- Top Action Header -->
-    <div class="flex items-center justify-between gap-2">
-        <div>
-            <h1 class="text-xl font-bold text-slate-900 tracking-tight">Perawatan Kambing</h1>
-            <p class="text-xs text-slate-500">Vitamin, obat cacing & perawatan per individu</p>
-        </div>
-        <button type="button" onclick="openBottomSheet('sheetTambahPengingat')"
-                class="inline-flex items-center justify-center gap-1.5 font-bold transition active:scale-95 shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs">
-            <i class="ti ti-plus"></i>
-            <span>Buat</span>
-        </button>
+<div class="space-y-3">
+    <!-- Page Title -->
+    <div>
+        <h1 class="text-xl font-bold text-slate-900 tracking-tight">Perawatan Kambing</h1>
+        <p class="text-xs text-slate-500">Vitamin, obat cacing & perawatan per individu</p>
     </div>
 
     <!-- Segmented Tab: Perawatan Kambing vs Semprot Kandang -->
@@ -109,7 +102,15 @@
     @endif
 </div>
 
-<!-- Bottom Sheet Buat Pengingat Perawatan -->
+{{-- FAB: Buat Pengingat Perawatan --}}
+<button type="button"
+        onclick="openBottomSheet('sheetTambahPengingat')"
+        class="fixed z-30 bottom-24 right-4 w-14 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-lg flex items-center justify-center transition-all"
+        aria-label="Buat Pengingat Perawatan">
+    <i class="ti ti-plus text-2xl"></i>
+</button>
+
+{{-- Bottom Sheet --}}
 <x-bottom-sheet id="sheetTambahPengingat" title="Buat Pengingat Perawatan">
     <form action="{{ route('pengingat-perawatan.store') }}" method="POST" class="space-y-4">
         @csrf

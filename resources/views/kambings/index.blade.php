@@ -3,98 +3,108 @@
 @section('title', 'Daftar Kambing')
 
 @section('content')
-<div class="space-y-4">
-    <!-- Top Action Header -->
-    <div class="flex items-center justify-between gap-2 mb-2">
-        <div>
-            <h1 class="text-xl font-bold text-slate-900 tracking-tight">Daftar Kambing</h1>
-            <p class="text-xs text-slate-500">Kelola populasi kambing dalam kandang</p>
-        </div>
-        <button type="button" onclick="openBottomSheet('sheetTambahKambing')"
-                class="inline-flex items-center justify-center gap-1.5 font-bold transition active:scale-95 shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs">
-            <i class="ti ti-plus"></i>
-            <span>Tambah</span>
-        </button>
+<div class="space-y-3">
+    <!-- Page Title -->
+    <div>
+        <h1 class="text-xl font-bold text-slate-900 tracking-tight">Daftar Kambing</h1>
+        <p class="text-xs text-slate-500">Kelola populasi kambing dalam kandang</p>
     </div>
 
     <!-- Search & Filter Card -->
     <x-section-card>
         <form action="{{ route('kambings.index') }}" method="GET" class="space-y-3">
+            <!-- Search always visible -->
             <div class="relative">
                 <x-search-bar name="search" :value="request('search')" placeholder="Cari nama kambing..." />
             </div>
 
-            <!-- Quick Filter Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                <div>
-                    <label for="jenis_kelamin" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Kelamin</label>
-                    <select name="jenis_kelamin" id="jenis_kelamin"
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <option value="">Semua</option>
-                        <option value="jantan" {{ request('jenis_kelamin') === 'jantan' ? 'selected' : '' }}>♂ Jantan</option>
-                        <option value="betina" {{ request('jenis_kelamin') === 'betina' ? 'selected' : '' }}>♀ Betina</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label for="status" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Status</label>
-                    <select name="status" id="status"
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <option value="">Semua</option>
-                        <option value="hidup" {{ request('status') === 'hidup' ? 'selected' : '' }}>Hidup</option>
-                        <option value="dijual" {{ request('status') === 'dijual' ? 'selected' : '' }}>Dijual</option>
-                        <option value="mati" {{ request('status') === 'mati' ? 'selected' : '' }}>Mati</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label for="ras" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Ras</label>
-                    <select name="ras" id="ras"
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <option value="">Semua</option>
-                        @foreach ($availableRas as $r)
-                            <option value="{{ $r }}" {{ request('ras') === $r ? 'selected' : '' }}>{{ $r }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-span-1 sm:col-span-1 flex items-end">
-                    <button type="submit" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-97">
+            <!-- Filter: collapsed by default, opens on tap -->
+            <details {{ request()->hasAny(['jenis_kelamin','status','ras','tanggal_lahir_dari','tanggal_lahir_sampai']) ? 'open' : '' }}
+                     class="group">
+                <summary class="flex items-center justify-between text-xs font-semibold text-slate-500 hover:text-slate-700 cursor-pointer select-none py-1">
+                    <span class="flex items-center gap-1.5">
+                        <i class="ti ti-adjustments-horizontal"></i>
                         Filter
-                    </button>
-                </div>
-            </div>
-
-            <!-- Extended Filter (Tanggal Lahir) -->
-            <details class="group pt-2 border-t border-slate-100">
-                <summary class="text-xs font-semibold text-slate-500 hover:text-slate-700 cursor-pointer flex items-center justify-between select-none">
-                    <span>Filter Tanggal Lahir</span>
-                    <i class="ti ti-chevron-down group-open:rotate-180 transition-transform text-xs"></i>
+                        @if(request()->hasAny(['jenis_kelamin','status','ras','tanggal_lahir_dari','tanggal_lahir_sampai']))
+                            <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">Aktif</span>
+                        @endif
+                    </span>
+                    <i class="ti ti-chevron-down group-open:rotate-180 transition-transform"></i>
                 </summary>
-                <div class="grid grid-cols-2 gap-2 pt-3">
-                    <div>
-                        <label for="tanggal_lahir_dari" class="block text-[10px] font-medium text-slate-500 mb-1">Lahir Dari</label>
-                        <input type="date" name="tanggal_lahir_dari" id="tanggal_lahir_dari" value="{{ request('tanggal_lahir_dari') }}"
-                            class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+
+                <div class="pt-3 space-y-3 border-t border-slate-100 mt-2">
+                    <!-- Quick Filter Grid -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="jenis_kelamin" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Kelamin</label>
+                            <select name="jenis_kelamin" id="jenis_kelamin"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="">Semua</option>
+                                <option value="jantan" {{ request('jenis_kelamin') === 'jantan' ? 'selected' : '' }}>♂ Jantan</option>
+                                <option value="betina" {{ request('jenis_kelamin') === 'betina' ? 'selected' : '' }}>♀ Betina</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="status" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Status</label>
+                            <select name="status" id="status"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="">Semua</option>
+                                <option value="hidup" {{ request('status') === 'hidup' ? 'selected' : '' }}>Hidup</option>
+                                <option value="dijual" {{ request('status') === 'dijual' ? 'selected' : '' }}>Dijual</option>
+                                <option value="mati" {{ request('status') === 'mati' ? 'selected' : '' }}>Mati</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="ras" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Ras</label>
+                            <select name="ras" id="ras"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="">Semua</option>
+                                @foreach ($availableRas as $r)
+                                    <option value="{{ $r }}" {{ request('ras') === $r ? 'selected' : '' }}>{{ $r }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition active:scale-97">
+                                Terapkan
+                            </button>
+                        </div>
                     </div>
-                    <div>
-                        <label for="tanggal_lahir_sampai" class="block text-[10px] font-medium text-slate-500 mb-1">Lahir Sampai</label>
-                        <input type="date" name="tanggal_lahir_sampai" id="tanggal_lahir_sampai" value="{{ request('tanggal_lahir_sampai') }}"
-                            class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    </div>
+
+                    <!-- Extended: Tanggal Lahir -->
+                    <details class="group/date">
+                        <summary class="text-xs font-semibold text-slate-400 hover:text-slate-600 cursor-pointer flex items-center justify-between select-none">
+                            <span>Filter Tanggal Lahir</span>
+                            <i class="ti ti-chevron-down group-open/date:rotate-180 transition-transform text-xs"></i>
+                        </summary>
+                        <div class="grid grid-cols-2 gap-2 pt-3">
+                            <div>
+                                <label for="tanggal_lahir_dari" class="block text-[10px] font-medium text-slate-500 mb-1">Lahir Dari</label>
+                                <input type="date" name="tanggal_lahir_dari" id="tanggal_lahir_dari" value="{{ request('tanggal_lahir_dari') }}"
+                                    class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label for="tanggal_lahir_sampai" class="block text-[10px] font-medium text-slate-500 mb-1">Lahir Sampai</label>
+                                <input type="date" name="tanggal_lahir_sampai" id="tanggal_lahir_sampai" value="{{ request('tanggal_lahir_sampai') }}"
+                                    class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                        </div>
+                    </details>
+
+                    @if (request()->hasAny(['search', 'jenis_kelamin', 'status', 'ras', 'tanggal_lahir_dari', 'tanggal_lahir_sampai']))
+                        <div class="flex items-center justify-between text-xs border-t border-slate-100 pt-2">
+                            <span class="text-slate-500">Filter aktif</span>
+                            <a href="{{ route('kambings.index') }}" class="text-emerald-600 font-semibold hover:underline">Reset</a>
+                        </div>
+                    @endif
                 </div>
             </details>
-
-            @if (request()->hasAny(['search', 'jenis_kelamin', 'status', 'ras', 'tanggal_lahir_dari', 'tanggal_lahir_sampai']))
-                <div class="pt-2 flex items-center justify-between text-xs border-t border-slate-100">
-                    <span class="text-slate-500">Filter aktif diterapkan</span>
-                    <a href="{{ route('kambings.index') }}" class="text-emerald-600 font-semibold hover:underline">
-                        Reset Filter
-                    </a>
-                </div>
-            @endif
         </form>
     </x-section-card>
+
 
     <!-- Total items info -->
     <div class="flex items-center justify-between text-xs text-slate-500 px-1">
@@ -192,7 +202,15 @@
     @endif
 </div>
 
-<!-- Bottom Sheet Tambah Kambing -->
+{{-- FAB: Tambah Kambing --}}
+<button type="button"
+        onclick="openBottomSheet('sheetTambahKambing')"
+        class="fixed z-30 bottom-24 right-4 w-14 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-lg flex items-center justify-center transition-all"
+        aria-label="Tambah Kambing">
+    <i class="ti ti-plus text-2xl"></i>
+</button>
+
+{{-- Bottom Sheet Tambah Kambing --}}
 <x-bottom-sheet id="sheetTambahKambing" title="Tambah Kambing Baru">
     <form action="{{ route('kambings.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
         @csrf
