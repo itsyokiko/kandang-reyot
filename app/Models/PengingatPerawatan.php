@@ -2,17 +2,19 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PengingatPerawatan extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToUser;
 
     protected $table = 'pengingat_perawatans';
 
     protected $fillable = [
+        'user_id',
         'kambing_id',
         'jenis_perawatan',
         'tanggal',

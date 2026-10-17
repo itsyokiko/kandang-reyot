@@ -24,7 +24,11 @@ class KelahiranController extends Controller
         $betinas  = Kambing::where('jenis_kelamin', 'betina')->orderBy('nama')->get();
         $pejantans = Kambing::where('jenis_kelamin', 'jantan')->orderBy('nama')->get();
 
-        return view('kelahirans.index', compact('kelahirans', 'perkawinans', 'betinas', 'pejantans'));
+        $allKambings = Kambing::select('id', 'nama', 'ras', 'jenis_kelamin', 'tanggal_lahir', 'induk_id', 'pejantan_id')
+            ->orderBy('nama')
+            ->get();
+
+        return view('kelahirans.index', compact('kelahirans', 'perkawinans', 'betinas', 'pejantans', 'allKambings'));
     }
 
     public function create(Request $request)
@@ -36,6 +40,10 @@ class KelahiranController extends Controller
         $betinas  = Kambing::where('jenis_kelamin', 'betina')->orderBy('nama')->get();
         $pejantans = Kambing::where('jenis_kelamin', 'jantan')->orderBy('nama')->get();
 
+        $allKambings = Kambing::select('id', 'nama', 'ras', 'jenis_kelamin', 'tanggal_lahir', 'induk_id', 'pejantan_id')
+            ->orderBy('nama')
+            ->get();
+
         $selectedPerkawinanId = $request->query('perkawinan_id');
         $selectedPerkawinan   = $selectedPerkawinanId ? Perkawinan::find($selectedPerkawinanId) : null;
 
@@ -46,6 +54,7 @@ class KelahiranController extends Controller
             'perkawinans',
             'betinas',
             'pejantans',
+            'allKambings',
             'selectedPerkawinanId',
             'selectedIndukId',
             'selectedPejantanId'
@@ -104,42 +113,43 @@ class KelahiranController extends Controller
             ],
             'catatan'                   => ['nullable', 'string'],
             'anak'                      => ['required', 'array', 'min:1'],
-            // anak bisa link ke kambing yang ada (kambing_id), atau anak baru (nama wajib)
             'anak.*.kambing_id'         => ['nullable', 'exists:kambings,id'],
             'anak.*.nama'               => ['nullable', 'string', 'max:255'],
             'anak.*.jenis_kelamin'      => ['nullable', 'in:jantan,betina'],
             'anak.*.tanggal_lahir'      => ['required', 'date'],
             'anak.*.ras'                => ['nullable', 'string', 'max:255'],
+            'anak.*.pejantan_id'        => ['nullable', 'exists:kambings,id'],
             'anak.*.catatan'            => ['nullable', 'string'],
         ], [
             'anak.*.tanggal_lahir.required' => 'Tanggal lahir setiap anak wajib diisi.',
         ]);
 
-        // Tambahan validasi: jika tidak ada kambing_id, nama wajib & unik
         $validator->after(function ($v) use ($request) {
             $namaList = [];
             foreach ((array) $request->input('anak', []) as $i => $item) {
-                $isExisting = !empty($item['kambing_id']);
-                if (!$isExisting) {
-                    if (empty($item['nama'])) {
-                        $v->errors()->add("anak.{$i}.nama", 'Nama anak wajib diisi jika bukan memilih kambing yang sudah ada.');
-                    } else {
-                        $nama = $item['nama'];
-                        if (in_array(mb_strtolower($nama), $namaList)) {
-                            $v->errors()->add("anak.{$i}.nama", "Nama anak tidak boleh sama dalam satu pengisian.");
-                        }
-                        $namaList[] = mb_strtolower($nama);
-                        if (Kambing::where('nama', $nama)->exists()) {
-                            $v->errors()->add("anak.{$i}.nama", "Nama kambing \"{$nama}\" sudah digunakan.");
-                        }
+                $nama = trim($item['nama'] ?? '');
+                $kambingId = $item['kambing_id'] ?? null;
+
+                if (empty($nama) && empty($kambingId)) {
+                    $v->errors()->add("anak.{$i}.nama", 'Nama anak wajib diisi.');
+                    continue;
+                }
+
+                if (!empty($nama)) {
+                    if (in_array(mb_strtolower($nama), $namaList)) {
+                        $v->errors()->add("anak.{$i}.nama", "Nama anak \"{$nama}\" tidak boleh sama dalam satu peristiwa kelahiran.");
                     }
-                    if (empty($item['jenis_kelamin'])) {
-                        $v->errors()->add("anak.{$i}.jenis_kelamin", 'Jenis kelamin anak wajib dipilih.');
-                    }
+                    $namaList[] = mb_strtolower($nama);
+                }
+
+                // Jika kambing belum ada di DB, jenis kelamin wajib dipilih
+                $exists = $kambingId ? true : (!empty($nama) && Kambing::where('nama', $nama)->exists());
+                if (!$exists && empty($item['jenis_kelamin'])) {
+                    $v->errors()->add("anak.{$i}.jenis_kelamin", 'Jenis kelamin anak wajib dipilih.');
                 }
             }
 
-            // Validasi perkawinan match
+            // Validasi kecocokan perkawinan
             if ($request->filled('perkawinan_id')) {
                 $perkawinan = Perkawinan::find($request->input('perkawinan_id'));
                 if ($perkawinan) {
@@ -155,17 +165,17 @@ class KelahiranController extends Controller
 
         $validated = $validator->validate();
 
-        $createdKelahirans = DB::transaction(function () use ($validated, $request) {
+        $createdKelahirans = DB::transaction(function () use ($validated) {
             $indukId    = $validated['induk_id'];
             $pejantanId = $validated['pejantan_id'];
             $perkawinanId = $validated['perkawinan_id'] ?? null;
             $catatan    = $validated['catatan'] ?? null;
             $induk      = Kambing::find($indukId);
 
-            // Group anak by tanggal_lahir → satu kelahiran per tanggal unik
+            // Group anak by tanggal_lahir -> satu record kelahiran per tanggal unik
             $groups = [];
             foreach ($validated['anak'] as $item) {
-                $tgl = $item['tanggal_lahir'];
+                $tgl = !empty($item['tanggal_lahir']) ? $item['tanggal_lahir'] : date('Y-m-d');
                 $groups[$tgl][] = $item;
             }
 
@@ -180,26 +190,39 @@ class KelahiranController extends Controller
                 ]);
 
                 foreach ($anaks as $childData) {
+                    $childPejantan = !empty($childData['pejantan_id']) ? $childData['pejantan_id'] : $pejantanId;
+                    $childRas = !empty($childData['ras']) ? $childData['ras'] : ($induk?->ras);
+
+                    // Cari apakah kambing sudah ada di database (ID atau nama)
+                    $existingKambing = null;
                     if (!empty($childData['kambing_id'])) {
-                        // Link kambing existing ke kelahiran ini
-                        Kambing::where('id', $childData['kambing_id'])->update([
-                            'kelahiran_id' => $kelahiran->id,
-                            'induk_id'     => $indukId,
-                            'pejantan_id'  => $pejantanId,
+                        $existingKambing = Kambing::find($childData['kambing_id']);
+                    }
+                    if (!$existingKambing && !empty($childData['nama'])) {
+                        $existingKambing = Kambing::where('nama', trim($childData['nama']))->first();
+                    }
+
+                    if ($existingKambing) {
+                        // Tautkan kambing existing ke catatan kelahiran ini
+                        $existingKambing->update([
+                            'kelahiran_id'  => $kelahiran->id,
+                            'induk_id'      => $indukId,
+                            'pejantan_id'   => $childPejantan,
                             'tanggal_lahir' => $tglLahir,
+                            'ras'           => $childRas ?: $existingKambing->ras,
                         ]);
                     } else {
-                        // Buat kambing baru
+                        // Buat data kambing baru
                         Kambing::create([
-                            'nama'         => $childData['nama'],
-                            'jenis_kelamin' => $childData['jenis_kelamin'],
-                            'ras'          => !empty($childData['ras']) ? $childData['ras'] : ($induk?->ras),
+                            'nama'          => trim($childData['nama']),
+                            'jenis_kelamin' => $childData['jenis_kelamin'] ?? 'jantan',
+                            'ras'           => $childRas,
                             'tanggal_lahir' => $tglLahir,
-                            'status'       => 'hidup',
-                            'catatan'      => $childData['catatan'] ?? null,
-                            'kelahiran_id' => $kelahiran->id,
-                            'induk_id'     => $indukId,
-                            'pejantan_id'  => $pejantanId,
+                            'status'        => 'hidup',
+                            'catatan'       => $childData['catatan'] ?? null,
+                            'kelahiran_id'  => $kelahiran->id,
+                            'induk_id'      => $indukId,
+                            'pejantan_id'   => $childPejantan,
                         ]);
                     }
                 }
@@ -207,7 +230,7 @@ class KelahiranController extends Controller
                 $created[] = $kelahiran;
             }
 
-            // Tandai perkawinan berhasil
+            // Tandai status perkawinan berhasil jika ada
             if ($perkawinanId) {
                 $perkawinan = Perkawinan::find($perkawinanId);
                 if ($perkawinan && $perkawinan->status !== 'berhasil') {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Kambing;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -64,7 +65,12 @@ class KambingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama' => ['required', 'string', 'max:255', Rule::unique('kambings', 'nama')],
+            'nama' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('kambings', 'nama')->where('user_id', Auth::id()),
+            ],
             'jenis_kelamin' => ['required', 'in:jantan,betina'],
             'ras' => ['nullable', 'string', 'max:255'],
             'tanggal_lahir' => ['nullable', 'date'],
@@ -106,7 +112,12 @@ class KambingController extends Controller
     public function update(Request $request, Kambing $kambing)
     {
         $validator = Validator::make($request->all(), [
-            'nama' => ['required', 'string', 'max:255', Rule::unique('kambings', 'nama')->ignore($kambing->id)],
+            'nama' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('kambings', 'nama')->where('user_id', Auth::id())->ignore($kambing->id),
+            ],
             'jenis_kelamin' => ['required', 'in:jantan,betina'],
             'ras' => ['nullable', 'string', 'max:255'],
             'tanggal_lahir' => ['nullable', 'date'],

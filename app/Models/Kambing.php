@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Kambing extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToUser;
 
     protected $table = 'kambings';
 
@@ -17,6 +18,7 @@ class Kambing extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'user_id',
         'nama',
         'jenis_kelamin',
         'ras',

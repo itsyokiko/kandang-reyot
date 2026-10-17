@@ -57,6 +57,15 @@ class AuthController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
 
+        // Jika ada data lama tanpa user_id dan hanya ada 1 user, kaitkan ke user ini
+        if (User::count() === 1) {
+            \App\Models\Kambing::withoutGlobalScope('user_isolation')->whereNull('user_id')->update(['user_id' => $user->id]);
+            \App\Models\Kelahiran::withoutGlobalScope('user_isolation')->whereNull('user_id')->update(['user_id' => $user->id]);
+            \App\Models\Perkawinan::withoutGlobalScope('user_isolation')->whereNull('user_id')->update(['user_id' => $user->id]);
+            \App\Models\RiwayatSakit::withoutGlobalScope('user_isolation')->whereNull('user_id')->update(['user_id' => $user->id]);
+            \App\Models\PengingatPerawatan::withoutGlobalScope('user_isolation')->whereNull('user_id')->update(['user_id' => $user->id]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Login Google berhasil.',

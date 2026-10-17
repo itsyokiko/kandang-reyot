@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,11 +10,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Kelahiran extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToUser;
 
     protected $table = 'kelahirans';
 
     protected $fillable = [
+        'user_id',
         'perkawinan_id',
         'induk_id',
         'pejantan_id',
