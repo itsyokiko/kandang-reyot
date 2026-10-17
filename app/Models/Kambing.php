@@ -203,6 +203,37 @@ class Kambing extends Model
         return $this->hasMany(PengingatPerawatan::class, 'kambing_id')->latest('tanggal');
     }
 
+    public function getKategoriUsiaAttribute(): ?array
+    {
+        if (!$this->tanggal_lahir) {
+            return null;
+        }
+
+        $now = \Carbon\Carbon::now()->startOfDay();
+        $lahir = \Carbon\Carbon::parse($this->tanggal_lahir)->startOfDay();
+        $umurBulan = (int) $lahir->diffInMonths($now);
+
+        if ($umurBulan < 6) {
+            return [
+                'key' => 'anak',
+                'label' => 'Anak (Cempe)',
+                'badge_class' => 'bg-amber-50 text-amber-800 border-amber-200',
+            ];
+        } elseif ($umurBulan <= 12) {
+            return [
+                'key' => 'muda',
+                'label' => 'Kambing Muda',
+                'badge_class' => 'bg-blue-50 text-blue-800 border-blue-200',
+            ];
+        }
+
+        return [
+            'key' => 'dewasa',
+            'label' => 'Dewasa',
+            'badge_class' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        ];
+    }
+
     public function getKesiapanKawinInfoAttribute(): ?array
     {
         if ($this->jenis_kelamin !== 'betina' || $this->status !== 'hidup') {

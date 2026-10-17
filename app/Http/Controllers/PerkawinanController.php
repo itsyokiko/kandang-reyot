@@ -15,16 +15,16 @@ class PerkawinanController extends Controller
             ->latest('tanggal_kawin')
             ->get();
 
-        $betinas = Kambing::where('jenis_kelamin', 'betina')->orderBy('nama')->get();
-        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->orderBy('nama')->get();
+        $betinas = Kambing::where('jenis_kelamin', 'betina')->where('status', '!=', 'mati')->orderBy('nama')->get();
+        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->where('status', '!=', 'mati')->orderBy('nama')->get();
 
         return view('perkawinans.index', compact('perkawinans', 'betinas', 'pejantans'));
     }
 
     public function create(Request $request)
     {
-        $betinas = Kambing::where('jenis_kelamin', 'betina')->orderBy('nama')->get();
-        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->orderBy('nama')->get();
+        $betinas = Kambing::where('jenis_kelamin', 'betina')->where('status', '!=', 'mati')->orderBy('nama')->get();
+        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->where('status', '!=', 'mati')->orderBy('nama')->get();
 
         $selectedBetinaId = $request->query('betina_id');
         $selectedPejantanId = $request->query('pejantan_id');
@@ -46,8 +46,11 @@ class PerkawinanController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'betina_id' => [
+        $metode = $request->input('metode_kawin', 'alami');
+
+        $rules = [
+            'metode_kawin'  => ['nullable', 'in:alami,inseminasi,luar'],
+            'betina_id'     => [
                 'required',
                 'exists:kambings,id',
                 function ($attribute, $value, $fail) {
@@ -55,9 +58,18 @@ class PerkawinanController extends Controller
                     if ($kambing && $kambing->jenis_kelamin !== 'betina') {
                         $fail('Kambing betina yang dipilih harus berjenis kelamin betina.');
                     }
+                    if ($kambing && $kambing->status === 'mati') {
+                        $fail('Kambing yang sudah mati tidak dapat dikawinkan.');
+                    }
                 },
             ],
-            'pejantan_id' => [
+            'tanggal_kawin' => ['required', 'date'],
+            'status'        => ['required', 'in:menunggu,berhasil,tidak_berhasil'],
+            'catatan'       => ['nullable', 'string'],
+        ];
+
+        if ($metode === 'alami') {
+            $rules['pejantan_id'] = [
                 'required',
                 'exists:kambings,id',
                 'different:betina_id',
@@ -66,23 +78,55 @@ class PerkawinanController extends Controller
                     if ($kambing && $kambing->jenis_kelamin !== 'jantan') {
                         $fail('Pejantan yang dipilih harus berjenis kelamin jantan.');
                     }
+                    if ($kambing && $kambing->status === 'mati') {
+                        $fail('Pejantan yang sudah mati tidak dapat dipilih.');
+                    }
                 },
-            ],
-            'tanggal_kawin' => ['required', 'date'],
-            'status' => ['required', 'in:menunggu,berhasil,tidak_berhasil'],
-            'catatan' => ['nullable', 'string'],
-            'abaikan_inbreeding' => ['nullable'],
-        ]);
+            ];
+        } else {
+            $rules['nama_pejantan_luar'] = ['required', 'string', 'max:255'];
+            $rules['pejantan_id'] = ['nullable'];
+        }
 
-        $validator->after(function ($validator) use ($request) {
-            $inbreeding = Kambing::checkInbreeding($request->input('betina_id'), $request->input('pejantan_id'));
-            if ($inbreeding && !$request->boolean('abaikan_inbreeding')) {
-                $validator->errors()->add('pejantan_id', "Peringatan Inbreeding ({$inbreeding['title']}): {$inbreeding['message']}");
+        $validator = Validator::make($request->all(), $rules);
+
+        $validator->after(function ($validator) use ($request, $metode) {
+            if ($metode === 'alami' && $request->filled('pejantan_id')) {
+                $inbreeding = Kambing::checkInbreeding($request->input('betina_id'), $request->input('pejantan_id'));
+                if ($inbreeding) {
+                    $validator->errors()->add('pejantan_id', "Dilarang perkawinan sedarah ({$inbreeding['title']}): {$inbreeding['message']}");
+                }
             }
         });
 
         $validated = $validator->validate();
-        unset($validated['abaikan_inbreeding']);
+
+        // Handle Pejantan Luar / Inseminasi Buatan
+        if ($metode !== 'alami') {
+            $namaLuar = trim($validated['nama_pejantan_luar']);
+            $catatanKambing = $metode === 'inseminasi'
+                ? 'Inseminasi Buatan (Straw IB)'
+                : 'Pejantan luar kandang';
+
+            $pejantanRecord = Kambing::where('nama', $namaLuar)
+                ->where('jenis_kelamin', 'jantan')
+                ->first();
+
+            if (!$pejantanRecord) {
+                $pejantanRecord = Kambing::create([
+                    'nama'          => $namaLuar,
+                    'jenis_kelamin' => 'jantan',
+                    'status'        => 'hidup',
+                    'catatan'       => $catatanKambing,
+                ]);
+            }
+
+            $validated['pejantan_id'] = $pejantanRecord->id;
+            $prefixKet = $metode === 'inseminasi' ? '[Inseminasi Buatan (IB)]' : '[Pejantan Luar Kandang]';
+            $validated['catatan'] = trim($prefixKet . ' ' . ($validated['catatan'] ?? ''));
+        }
+
+        unset($validated['nama_pejantan_luar'], $validated['metode_kawin'], $validated['abaikan_inbreeding']);
 
         $perkawinan = Perkawinan::create($validated);
 
@@ -93,16 +137,16 @@ class PerkawinanController extends Controller
     {
         $perkawinan->load(['betina', 'pejantan']);
 
-        $betinas = Kambing::where('jenis_kelamin', 'betina')->orderBy('nama')->get();
-        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->orderBy('nama')->get();
+        $betinas = Kambing::where('jenis_kelamin', 'betina')->where('status', '!=', 'mati')->orderBy('nama')->get();
+        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->where('status', '!=', 'mati')->orderBy('nama')->get();
 
         return view('perkawinans.show', compact('perkawinan', 'betinas', 'pejantans'));
     }
 
     public function edit(Perkawinan $perkawinan)
     {
-        $betinas = Kambing::where('jenis_kelamin', 'betina')->orderBy('nama')->get();
-        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->orderBy('nama')->get();
+        $betinas = Kambing::where('jenis_kelamin', 'betina')->where('status', '!=', 'mati')->orderBy('nama')->get();
+        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->where('status', '!=', 'mati')->orderBy('nama')->get();
 
         return view('perkawinans.edit', compact('perkawinan', 'betinas', 'pejantans'));
     }
@@ -118,6 +162,9 @@ class PerkawinanController extends Controller
                     if ($kambing && $kambing->jenis_kelamin !== 'betina') {
                         $fail('Kambing betina yang dipilih harus berjenis kelamin betina.');
                     }
+                    if ($kambing && $kambing->status === 'mati') {
+                        $fail('Kambing yang sudah mati tidak dapat dikawinkan.');
+                    }
                 },
             ],
             'pejantan_id' => [
@@ -134,7 +181,6 @@ class PerkawinanController extends Controller
             'tanggal_kawin' => ['required', 'date'],
             'status' => ['required', 'in:menunggu,berhasil,tidak_berhasil'],
             'catatan' => ['nullable', 'string'],
-            'abaikan_inbreeding' => ['nullable'],
         ]);
 
         $validator->after(function ($validator) use ($request, $perkawinan) {
@@ -145,13 +191,12 @@ class PerkawinanController extends Controller
             }
 
             $inbreeding = Kambing::checkInbreeding($request->input('betina_id'), $request->input('pejantan_id'));
-            if ($inbreeding && !$request->boolean('abaikan_inbreeding')) {
-                $validator->errors()->add('pejantan_id', "Peringatan Inbreeding ({$inbreeding['title']}): {$inbreeding['message']}");
+            if ($inbreeding) {
+                $validator->errors()->add('pejantan_id', "Dilarang perkawinan sedarah ({$inbreeding['title']}): {$inbreeding['message']}");
             }
         });
 
         $validated = $validator->validate();
-        unset($validated['abaikan_inbreeding']);
 
         $perkawinan->update($validated);
 

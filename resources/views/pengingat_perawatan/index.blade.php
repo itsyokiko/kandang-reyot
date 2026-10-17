@@ -137,12 +137,22 @@
                     <!-- Actions -->
                     <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 text-xs font-semibold">
                         @if ($p->status === 'belum_diberikan')
-                            <button type="button"
-                                    onclick="bukaSelesaiModal({{ $p->id }}, '{{ addslashes($p->jenis_perawatan) }}', '{{ $p->kambing?->nama }}')"
-                                    class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-bold transition active:scale-95 flex items-center gap-1">
-                                <i class="ti ti-check text-sm"></i>
-                                <span>Sudah Diberikan</span>
-                            </button>
+                            @php
+                                $diffHari = $p->tanggal ? (int) now()->startOfDay()->diffInDays($p->tanggal->startOfDay(), false) : 0;
+                            @endphp
+                            @if ($diffHari <= 0)
+                                <button type="button"
+                                        onclick="bukaSelesaiModal({{ $p->id }}, '{{ addslashes($p->jenis_perawatan) }}', '{{ $p->kambing?->nama }}')"
+                                        class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-bold transition active:scale-95 flex items-center gap-1 shadow-2xs">
+                                    <i class="ti ti-check text-sm"></i>
+                                    <span>Sudah Diberikan</span>
+                                </button>
+                            @else
+                                <span class="text-[11px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl flex items-center gap-1">
+                                    <i class="ti ti-clock text-slate-400"></i>
+                                    <span>Menunggu Jadwal Berikutnya</span>
+                                </span>
+                            @endif
                         @endif
 
                         <form action="{{ route('pengingat-perawatan.destroy', $p) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, this, 'Hapus Catatan Perawatan?', 'Apakah Anda yakin ingin menghapus catatan perawatan ini?');">
@@ -349,26 +359,24 @@
             <span id="selesaiPerawatanJenis"></span>
         </div>
 
-        <div>
-            <label for="selesai_tanggal_pemberian" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Tanggal Diberikan <span class="text-rose-500">*</span>
-            </label>
-            <input type="date" name="tanggal_pemberian" id="selesai_tanggal_pemberian" value="{{ date('Y-m-d') }}" required
-                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
-        </div>
+        <!-- Tanggal pemberian otomatis hari ini (hidden) -->
+        <input type="hidden" name="tanggal_pemberian" id="selesai_tanggal_pemberian" value="{{ date('Y-m-d') }}">
 
-        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
             <label for="selesai_ulang_hari" class="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-                Kapan Akan Dilakukan Lagi? <span class="text-[10px] font-normal text-slate-400">(Opsional)</span>
+                Kapan Akan Diingatkan Lagi? <span class="text-[10px] font-normal text-emerald-600">(Jadwalkan Ulang)</span>
             </label>
             <select name="ulang_hari" id="selesai_ulang_hari"
-                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
-                <option value="">-- Tidak Perlu Dijadwalkan Ulang --</option>
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
                 <option value="30">30 Hari Lagi (1 Bulan)</option>
                 <option value="60">60 Hari Lagi (2 Bulan)</option>
                 <option value="90">90 Hari Lagi (3 Bulan)</option>
                 <option value="180">180 Hari Lagi (6 Bulan)</option>
+                <option value="">-- Tidak Perlu Dijadwalkan Ulang --</option>
             </select>
+            <p class="text-[10px] text-slate-500">
+                Pemberian periode saat ini otomatis selesai dan tersimpan ke riwayat. Jadwal berikutnya akan dibuat otomatis.
+            </p>
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -378,7 +386,7 @@
             </button>
             <button type="submit"
                     class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs active:scale-95 transition">
-                Simpan & Selesai
+                Konfirmasi & Jadwalkan Ulang
             </button>
         </div>
     </form>

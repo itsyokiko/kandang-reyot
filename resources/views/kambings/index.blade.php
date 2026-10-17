@@ -34,13 +34,13 @@
             </div>
 
             <!-- Filter: collapsed by default, opens on tap -->
-            <details {{ request()->hasAny(['jenis_kelamin','status','ras','tanggal_lahir_dari','tanggal_lahir_sampai']) ? 'open' : '' }}
+            <details {{ request()->hasAny(['jenis_kelamin','status','ras','kategori_usia','tanggal_lahir_dari','tanggal_lahir_sampai']) ? 'open' : '' }}
                      class="group">
                 <summary class="flex items-center justify-between text-xs font-semibold text-slate-500 hover:text-slate-700 cursor-pointer select-none py-1">
                     <span class="flex items-center gap-1.5">
                         <i class="ti ti-adjustments-horizontal"></i>
                         Filter
-                        @if(request()->hasAny(['jenis_kelamin','status','ras','tanggal_lahir_dari','tanggal_lahir_sampai']))
+                        @if(request()->hasAny(['jenis_kelamin','status','ras','kategori_usia','tanggal_lahir_dari','tanggal_lahir_sampai']))
                             <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">Aktif</span>
                         @endif
                     </span>
@@ -50,6 +50,17 @@
                 <div class="pt-3 space-y-3 border-t border-slate-100 mt-2">
                     <!-- Quick Filter Grid -->
                     <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="kategori_usia" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Usia</label>
+                            <select name="kategori_usia" id="kategori_usia"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="">Semua Usia</option>
+                                <option value="anak" {{ request('kategori_usia') === 'anak' ? 'selected' : '' }}>Anak (&lt; 6 bln)</option>
+                                <option value="muda" {{ request('kategori_usia') === 'muda' ? 'selected' : '' }}>Kambing Muda (6-12 bln)</option>
+                                <option value="dewasa" {{ request('kategori_usia') === 'dewasa' ? 'selected' : '' }}>Dewasa (&gt; 1 thn)</option>
+                            </select>
+                        </div>
+
                         <div>
                             <label for="jenis_kelamin" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Kelamin</label>
                             <select name="jenis_kelamin" id="jenis_kelamin"
@@ -82,9 +93,9 @@
                             </select>
                         </div>
 
-                        <div class="flex items-end">
+                        <div class="col-span-2 pt-1">
                             <button type="submit" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition active:scale-97">
-                                Terapkan
+                                Terapkan Filter
                             </button>
                         </div>
                     </div>
@@ -153,10 +164,15 @@
 
                                 <!-- Identitas -->
                                 <div>
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex items-center gap-2 flex-wrap">
                                         <a href="{{ route('kambings.show', $kambing) }}" class="font-bold text-slate-900 hover:text-emerald-600 text-sm tracking-tight transition">
                                             {{ $kambing->nama }}
                                         </a>
+                                        @if($kambing->kategori_usia)
+                                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md border {{ $kambing->kategori_usia['badge_class'] }}">
+                                                {{ $kambing->kategori_usia['label'] }}
+                                            </span>
+                                        @endif
                                     </div>
 
                                     <div class="flex items-center gap-2 mt-1 text-xs text-slate-500">

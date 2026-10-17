@@ -647,6 +647,39 @@
                 });
             }
         });
+
+        // Auto-lift FAB buttons when scrolling reaches bottom to avoid covering Next / Pagination buttons
+        (function() {
+            let isLifted = false;
+            function checkFabLift() {
+                const fabs = document.querySelectorAll('[data-fab]');
+                if (!fabs.length) return;
+
+                const scrollBottom = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
+                const shouldLift = scrollBottom < 130;
+
+                if (shouldLift && !isLifted) {
+                    isLifted = true;
+                    fabs.forEach(fab => {
+                        fab.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1)';
+                        fab.style.transform = 'translateY(-76px)';
+                    });
+                } else if (!shouldLift && isLifted) {
+                    isLifted = false;
+                    fabs.forEach(fab => {
+                        // Jangan override jika sedang ditutup oleh bottom sheet
+                        if (fab.style.opacity !== '0') {
+                            fab.style.transition = 'transform 0.22s ease-out';
+                            fab.style.transform = 'translateY(0)';
+                        }
+                    });
+                }
+            }
+
+            window.addEventListener('scroll', checkFabLift, { passive: true });
+            window.addEventListener('resize', checkFabLift, { passive: true });
+            document.addEventListener('DOMContentLoaded', checkFabLift);
+        })();
     </script>
 </body>
 </html>

@@ -45,6 +45,23 @@ class KambingController extends Controller
             $query->whereDate('tanggal_lahir', '<=', $request->input('tanggal_lahir_sampai'));
         }
 
+        // Filter kategori usia: anak (< 6 bulan), muda (6 - 12 bulan), dewasa (> 12 bulan)
+        if ($request->filled('kategori_usia')) {
+            $kat = $request->input('kategori_usia');
+            $now = now();
+            if ($kat === 'anak') {
+                $query->whereNotNull('tanggal_lahir')
+                      ->whereDate('tanggal_lahir', '>', $now->copy()->subMonths(6));
+            } elseif ($kat === 'muda') {
+                $query->whereNotNull('tanggal_lahir')
+                      ->whereDate('tanggal_lahir', '<=', $now->copy()->subMonths(6))
+                      ->whereDate('tanggal_lahir', '>=', $now->copy()->subMonths(12));
+            } elseif ($kat === 'dewasa') {
+                $query->whereNotNull('tanggal_lahir')
+                      ->whereDate('tanggal_lahir', '<', $now->copy()->subMonths(12));
+            }
+        }
+
         $kambings = $query->latest()->paginate(10)->withQueryString();
 
         // Ambil pilihan ras unik yang ada di database
