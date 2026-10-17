@@ -84,7 +84,7 @@ class PerkawinanController extends Controller
                 },
             ];
         } else {
-            $rules['nama_pejantan_luar'] = ['required', 'string', 'max:255'];
+            $rules['nama_pejantan_luar'] = ['nullable', 'string', 'max:255'];
             $rules['pejantan_id'] = ['nullable'];
         }
 
@@ -103,7 +103,10 @@ class PerkawinanController extends Controller
 
         // Handle Pejantan Luar / Inseminasi Buatan
         if ($metode !== 'alami') {
-            $namaLuar = trim($validated['nama_pejantan_luar']);
+            $namaLuar = trim($validated['nama_pejantan_luar'] ?? '');
+            if ($namaLuar === '') {
+                $namaLuar = $metode === 'inseminasi' ? 'Straw IB' : 'Pejantan Luar';
+            }
             $catatanKambing = $metode === 'inseminasi'
                 ? 'Inseminasi Buatan (Straw IB)'
                 : 'Pejantan luar kandang';

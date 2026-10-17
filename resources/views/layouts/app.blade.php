@@ -648,26 +648,60 @@
             }
         });
 
-        // Auto-lift FAB buttons when scrolling reaches bottom to avoid covering Next / Pagination buttons
+        // Auto-lift FAB ONLY when Next/Pagination button exists AND is physically covered by FAB
         (function() {
             let isLifted = false;
+
             function checkFabLift() {
                 const fabs = document.querySelectorAll('[data-fab]');
                 if (!fabs.length) return;
 
-                const scrollBottom = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
-                const shouldLift = scrollBottom < 130;
+                // 1. Check if Next pagination button exists on the page
+                const nextBtn = document.querySelector('a[rel="next"], nav[role="navigation"] a:last-child, nav[role="navigation"] [aria-label*="Next"], nav[role="navigation"] [aria-label*="Berikutnya"]');
 
-                if (shouldLift && !isLifted) {
+                if (!nextBtn) {
+                    if (isLifted) {
+                        isLifted = false;
+                        fabs.forEach(fab => {
+                            if (fab.style.opacity !== '0') {
+                                fab.style.transition = 'transform 0.22s ease-out';
+                                fab.style.transform = 'translateY(0)';
+                            }
+                        });
+                    }
+                    return;
+                }
+
+                // 2. Check if Next button is visible in viewport and physically collides with FAB
+                const nRect = nextBtn.getBoundingClientRect();
+                const isNextInViewport = nRect.top < window.innerHeight && nRect.bottom > 0 && nRect.width > 0 && nRect.height > 0;
+
+                let isCovered = false;
+                if (isNextInViewport) {
+                    fabs.forEach(fab => {
+                        const btn = fab.querySelector('button, a') || fab;
+                        const fRect = btn.getBoundingClientRect();
+
+                        // Check horizontal & vertical bounding box overlap with a small buffer
+                        const horizontalOverlap = nRect.left <= fRect.right + 12 && nRect.right >= fRect.left - 12;
+                        const verticalOverlap = nRect.top <= fRect.bottom + 12 && nRect.bottom >= fRect.top - 12;
+
+                        if (horizontalOverlap && verticalOverlap) {
+                            isCovered = true;
+                        }
+                    });
+                }
+
+                // 3. Animate only when truly covered
+                if (isCovered && !isLifted) {
                     isLifted = true;
                     fabs.forEach(fab => {
                         fab.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1)';
                         fab.style.transform = 'translateY(-76px)';
                     });
-                } else if (!shouldLift && isLifted) {
+                } else if (!isCovered && isLifted) {
                     isLifted = false;
                     fabs.forEach(fab => {
-                        // Jangan override jika sedang ditutup oleh bottom sheet
                         if (fab.style.opacity !== '0') {
                             fab.style.transition = 'transform 0.22s ease-out';
                             fab.style.transform = 'translateY(0)';

@@ -186,15 +186,15 @@
                 @enderror
             </div>
 
-            <!-- Pejantan Luar / IB Input Text -->
+            <!-- Pejantan Luar / IB Input Text (Opsional) -->
             <div id="wrapper_sheet_pejantan_luar" class="hidden">
                 <label id="sheet_label_pejantan_luar" for="sheet_nama_pejantan_luar" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Nama Pejantan / Kode Straw IB <span class="text-rose-500">*</span>
+                    Nama Pejantan / Kode Straw IB <span class="text-slate-400 font-normal">(Opsional)</span>
                 </label>
                 <input type="text" name="nama_pejantan_luar" id="sheet_nama_pejantan_luar" value="{{ old('nama_pejantan_luar') }}"
                     class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
-                    placeholder="Contoh: IB - Boer Super B901">
-                <p class="text-[10px] text-slate-400 mt-1">Data pejantan luar akan otomatis dicatat dan terhubung di silsilah keluarga besar.</p>
+                    placeholder="Contoh: IB - Boer Super B901 (Opsional)">
+                <p class="text-[10px] text-slate-400 mt-1">Bisa dikosongkan jika tidak diketahui atau tidak ada kode khusus.</p>
                 @error('nama_pejantan_luar')
                     <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
                 @enderror
@@ -280,20 +280,36 @@
             if (activeMetode === 'alami') {
                 if (wrapperKandang) wrapperKandang.classList.remove('hidden');
                 if (wrapperLuar) wrapperLuar.classList.add('hidden');
-                if (pejantanSel) pejantanSel.setAttribute('required', 'required');
-                if (inputLuar) inputLuar.removeAttribute('required');
+                if (pejantanSel) {
+                    pejantanSel.disabled = false;
+                    pejantanSel.setAttribute('required', 'required');
+                }
+                if (inputLuar) {
+                    inputLuar.disabled = true;
+                    inputLuar.removeAttribute('required');
+                }
+                filterSheetInbreedingOptions();
             } else {
+                // Sembunyikan & nonaktifkan selector jantan kandang
                 if (wrapperKandang) wrapperKandang.classList.add('hidden');
                 if (wrapperLuar) wrapperLuar.classList.remove('hidden');
-                if (pejantanSel) pejantanSel.removeAttribute('required');
+                if (pejantanSel) {
+                    pejantanSel.disabled = true;
+                    pejantanSel.removeAttribute('required');
+                    pejantanSel.value = '';
+                }
+                if (infoInbreeding) infoInbreeding.classList.add('hidden');
+
+                // Kolom nama pejantan luar / IB aktif dan bersifat opsional
                 if (inputLuar) {
-                    inputLuar.setAttribute('required', 'required');
+                    inputLuar.disabled = false;
+                    inputLuar.removeAttribute('required');
                     if (activeMetode === 'inseminasi') {
-                        if (labelLuar) labelLuar.innerHTML = 'Kode Batch Straw / Pejantan IB <span class="text-rose-500">*</span>';
-                        inputLuar.placeholder = 'Contoh: IB - Boer Super B901';
+                        if (labelLuar) labelLuar.innerHTML = 'Kode Batch Straw / Pejantan IB <span class="text-slate-400 font-normal">(Opsional)</span>';
+                        inputLuar.placeholder = 'Contoh: IB - Boer Super B901 (Boleh kosong)';
                     } else {
-                        if (labelLuar) labelLuar.innerHTML = 'Nama Pejantan Luar Kandang <span class="text-rose-500">*</span>';
-                        inputLuar.placeholder = 'Contoh: Si Hitam (Pak Slamet)';
+                        if (labelLuar) labelLuar.innerHTML = 'Nama Pejantan Luar Kandang <span class="text-slate-400 font-normal">(Opsional)</span>';
+                        inputLuar.placeholder = 'Contoh: Si Hitam (Pak Slamet) (Boleh kosong)';
                     }
                 }
             }

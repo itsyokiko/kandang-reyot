@@ -127,15 +127,15 @@
                         @enderror
                     </div>
 
-                    <!-- Pejantan Luar / Inseminasi Buatan Input Text -->
+                    <!-- Pejantan Luar / Inseminasi Buatan Input Text (Opsional) -->
                     <div id="wrapper_pejantan_luar" class="hidden">
                         <label id="label_pejantan_luar" for="nama_pejantan_luar" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                            Nama Pejantan / Kode Straw IB <span class="text-rose-500">*</span>
+                            Nama Pejantan / Kode Straw IB <span class="text-slate-400 font-normal">(Opsional)</span>
                         </label>
                         <input type="text" name="nama_pejantan_luar" id="nama_pejantan_luar" value="{{ old('nama_pejantan_luar') }}"
                             class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
-                            placeholder="Contoh: IB - Boer Super B901 atau Si Hitam (Pak Slamet)">
-                        <p class="text-[10px] text-slate-400 mt-1">Data pejantan luar akan otomatis dicatat dan terhubung di silsilah keluarga besar.</p>
+                            placeholder="Contoh: IB - Boer Super B901 atau Si Hitam (Opsional)">
+                        <p class="text-[10px] text-slate-400 mt-1">Bisa dikosongkan jika tidak diketahui atau tidak ada kode khusus.</p>
                         @error('nama_pejantan_luar')
                             <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
                         @enderror
@@ -224,20 +224,30 @@
             if (activeMetode === 'alami') {
                 wrapperKandang.classList.remove('hidden');
                 wrapperLuar.classList.add('hidden');
+                pejantanSel.disabled = false;
                 pejantanSel.setAttribute('required', 'required');
+                inputLuar.disabled = true;
                 inputLuar.removeAttribute('required');
+                filterInbreedingOptions();
             } else {
+                // Sembunyikan & nonaktifkan selector jantan kandang
                 wrapperKandang.classList.add('hidden');
                 wrapperLuar.classList.remove('hidden');
+                pejantanSel.disabled = true;
                 pejantanSel.removeAttribute('required');
-                inputLuar.setAttribute('required', 'required');
+                pejantanSel.value = '';
+                if (infoInbreeding) infoInbreeding.classList.add('hidden');
+
+                // Kolom nama pejantan luar / IB aktif dan bersifat opsional
+                inputLuar.disabled = false;
+                inputLuar.removeAttribute('required');
 
                 if (activeMetode === 'inseminasi') {
-                    labelLuar.innerHTML = 'Kode Batch Straw / Nama Pejantan IB <span class="text-rose-500">*</span>';
-                    inputLuar.placeholder = 'Contoh: IB - Boer Super B901';
+                    labelLuar.innerHTML = 'Kode Batch Straw / Nama Pejantan IB <span class="text-slate-400 font-normal">(Opsional)</span>';
+                    inputLuar.placeholder = 'Contoh: IB - Boer Super B901 (Boleh kosong)';
                 } else {
-                    labelLuar.innerHTML = 'Nama Pejantan Luar Kandang <span class="text-rose-500">*</span>';
-                    inputLuar.placeholder = 'Contoh: Si Hitam (Kambing Pak Slamet)';
+                    labelLuar.innerHTML = 'Nama Pejantan Luar Kandang <span class="text-slate-400 font-normal">(Opsional)</span>';
+                    inputLuar.placeholder = 'Contoh: Si Hitam (Pak Slamet) (Boleh kosong)';
                 }
             }
         }
