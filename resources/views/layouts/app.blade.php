@@ -15,7 +15,8 @@
     <link rel="manifest" href="{{ asset('manifest.json') }}">
 
     <!-- [Favicon] -->
-    <link rel="icon" href="{{ asset('images/goat_logo.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('favicon.png') }}" type="image/png">
+    <link rel="apple-touch-icon" href="{{ asset('images/icon-192x192.png') }}">
 
     <!-- [Instant Navigation Speculation Rules] -->
     <script type="speculationrules">

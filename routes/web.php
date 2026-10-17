@@ -36,6 +36,8 @@ Route::middleware('auth')->group(function () {
     Route::get('perkawinans/check-inbreeding', [PerkawinanController::class, 'checkInbreeding'])->name('perkawinans.check-inbreeding');
     Route::resource('perkawinans', PerkawinanController::class);
     Route::resource('kelahirans', KelahiranController::class);
+    Route::get('api/kambings/autocomplete', [KambingController::class, 'autocomplete'])->name('api.kambings.autocomplete');
+    Route::get('api/kambings/anak', [KelahiranController::class, 'anakByParents'])->name('api.kambings.anak');
 
     Route::resource('riwayat-sakit', RiwayatSakitController::class)->except(['show', 'edit', 'update']);
     Route::post('riwayat-sakit/{riwayatSakit}/konfirmasi', [RiwayatSakitController::class, 'konfirmasi'])->name('riwayat-sakit.konfirmasi');

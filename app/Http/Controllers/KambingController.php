@@ -156,4 +156,26 @@ class KambingController extends Controller
 
         return redirect()->route('kambings.index')->with('success', 'Data kambing berhasil dihapus.');
     }
+
+    /** Search kambing by name for autocomplete — returns JSON. */
+    public function autocomplete(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        $excludeId = $request->input('exclude_id'); // exclude a specific kambing (e.g. induk itself)
+
+        $query = Kambing::select('id', 'nama', 'ras', 'jenis_kelamin', 'tanggal_lahir', 'induk_id', 'pejantan_id')
+            ->where('status', 'hidup');
+
+        if ($q !== '') {
+            $query->where('nama', 'like', '%' . $q . '%');
+        }
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return response()->json(
+            $query->orderBy('nama')->limit(10)->get()
+        );
+    }
 }
