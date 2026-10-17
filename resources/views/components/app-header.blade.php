@@ -32,14 +32,15 @@
                     </div>
                 @endauth
             @elseif($showLogo)
-                <a href="{{ route('dashboard') }}" class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-xl shadow-inner active:scale-95 transition">
-                    <span>🐐</span>
+                <a href="{{ route('dashboard') }}" class="w-10 h-10 rounded-xl bg-emerald-600/60 p-1 flex items-center justify-center shadow-inner active:scale-95 transition">
+                    <img src="{{ asset('images/goat_logo.png') }}" alt="Logo" class="w-full h-full object-contain">
                 </a>
             @endif
 
             {{-- Title: only show on dashboard. Other pages have their own h1 in content. --}}
             @if(request()->routeIs('dashboard'))
-                <div>
+                <div class="flex items-center gap-2">
+                    <img src="{{ asset('images/goat_logo.png') }}" alt="Logo" class="w-8 h-8 object-contain rounded-lg">
                     <h1 class="text-base font-bold tracking-tight text-white leading-tight">
                         Kandang Reyot
                     </h1>
@@ -53,15 +54,6 @@
 
         <div class="flex items-center gap-2">
             {{ $slot ?? '' }}
-
-            @unless(request()->routeIs('dashboard'))
-                <button type="button"
-                        onclick="toggleAppDrawer()"
-                        class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-white"
-                        aria-label="Menu Aplikasi">
-                    <i class="ti ti-menu-2 text-xl"></i>
-                </button>
-            @endunless
         </div>
     </div>
 </header>

@@ -6,10 +6,12 @@
 <div class="space-y-5 max-w-sm mx-auto py-2">
     <!-- 1. Hero Brand Card -->
     <div class="bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-800 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden text-center space-y-3">
-        <div class="absolute -right-6 -bottom-8 text-8xl opacity-15 select-none pointer-events-none">🐐</div>
+        <div class="absolute -right-6 -bottom-8 w-32 h-32 opacity-15 select-none pointer-events-none">
+            <img src="{{ asset('images/goat_logo.png') }}" alt="" class="w-full h-full object-contain">
+        </div>
         
-        <div class="w-16 h-16 rounded-3xl bg-white/15 backdrop-blur-md border border-white/20 mx-auto flex items-center justify-center text-3xl shadow-inner animate-bounce-subtle">
-            🐐
+        <div class="w-16 h-16 rounded-3xl bg-white/15 backdrop-blur-md border border-white/20 mx-auto flex items-center justify-center p-2.5 shadow-inner animate-bounce-subtle">
+            <img src="{{ asset('images/goat_logo.png') }}" alt="Logo" class="w-full h-full object-contain">
         </div>
 
         <div class="space-y-1">
@@ -57,7 +59,7 @@
         <!-- Quick Highlight Chips -->
         <div class="grid grid-cols-2 gap-2 text-[11px] font-semibold text-slate-700">
             <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
-                <span class="text-base">🐐</span>
+                <img src="{{ asset('images/goat_logo.png') }}" alt="" class="w-4 h-4 object-contain inline-block">
                 <span>Populasi & Induk</span>
             </div>
             <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">

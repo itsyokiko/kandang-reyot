@@ -13,13 +13,13 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // 1. Statistik Kambing
-        $totalKambing = Kambing::count();
-        $totalJantan = Kambing::where('jenis_kelamin', 'jantan')->count();
-        $totalBetina = Kambing::where('jenis_kelamin', 'betina')->count();
+        // 1. Statistik Penghuni Kandang (Kambing hidup aktif)
         $totalHidup = Kambing::where('status', 'hidup')->count();
+        $totalJantan = Kambing::where('status', 'hidup')->where('jenis_kelamin', 'jantan')->count();
+        $totalBetina = Kambing::where('status', 'hidup')->where('jenis_kelamin', 'betina')->count();
         $totalDijual = Kambing::where('status', 'dijual')->count();
         $totalMati = Kambing::where('status', 'mati')->count();
+        $totalKambing = Kambing::count();
 
         // 2. Statistik Breeding
         $totalPerkawinan = Perkawinan::count();
@@ -41,14 +41,15 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        // 5. Statistik Ras (Dinamis dari Database)
-        $statistikRas = Kambing::select(
-            DB::raw("CASE WHEN ras IS NULL OR TRIM(ras) = '' THEN 'Tanpa ras' ELSE ras END as nama_ras"),
-            DB::raw("COUNT(*) as total")
-        )
-        ->groupBy('nama_ras')
-        ->orderByDesc('total')
-        ->get();
+        // 5. Statistik Ras (Hanya penghuni kandang aktif)
+        $statistikRas = Kambing::where('status', 'hidup')
+            ->select(
+                DB::raw("CASE WHEN ras IS NULL OR TRIM(ras) = '' THEN 'Tanpa ras' ELSE ras END as nama_ras"),
+                DB::raw("COUNT(*) as total")
+            )
+            ->groupBy('nama_ras')
+            ->orderByDesc('total')
+            ->get();
 
         // 6. Kambing Sedang Sakit
         $kambingSedangSakit = RiwayatSakit::with('kambing')

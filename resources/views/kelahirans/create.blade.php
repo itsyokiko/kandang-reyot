@@ -195,9 +195,9 @@
                                         <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                                             Ras (Opsional)
                                         </label>
-                                        <input type="text" name="anak[{{ $index }}][ras]" value="{{ $item['ras'] ?? '' }}"
+                                        <input type="text" name="anak[{{ $index }}][ras]" list="list-ras" value="{{ $item['ras'] ?? '' }}"
                                             class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                            placeholder="Bawaan induk jika kosong">
+                                            placeholder="Pilih atau ketik ras...">
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
@@ -321,9 +321,9 @@
                                     <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                                         Ras (Opsional)
                                     </label>
-                                    <input type="text" name="anak[${newIndex}][ras]"
+                                    <input type="text" name="anak[${newIndex}][ras]" list="list-ras"
                                         class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                        placeholder="Bawaan induk jika kosong">
+                                        placeholder="Pilih atau ketik ras...">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">

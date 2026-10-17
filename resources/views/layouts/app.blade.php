@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Kandang Reyot 🐐</title>
+    <title>Kandang Reyot</title>
 
     <!-- [PWA Meta Tags] -->
     <meta name="theme-color" content="#047857">
@@ -222,6 +222,13 @@
             @yield('content')
         </main>
 
+        <!-- Global Datalist for Ras / Breed Suggestions -->
+        <datalist id="list-ras">
+            @foreach(\App\Models\Kambing::getAvailableRas() as $rasItem)
+                <option value="{{ $rasItem }}"></option>
+            @endforeach
+        </datalist>
+
         <!-- Slide-over Drawer Menu (Secondary & Settings only) -->
         <x-drawer />
 
@@ -240,7 +247,7 @@
             <div class="relative w-14 h-14 flex items-center justify-center">
                 <div class="absolute inset-0 rounded-full border-4 border-emerald-100"></div>
                 <div class="absolute inset-0 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin"></div>
-                <span class="text-xl select-none">🐐</span>
+                <img src="{{ asset('images/goat_logo.png') }}" alt="Logo" class="w-7 h-7 object-contain relative z-10 select-none">
             </div>
             <div class="space-y-0.5">
                 <h4 id="globalLoaderTitle" class="text-xs font-bold text-slate-800">Memproses Data</h4>

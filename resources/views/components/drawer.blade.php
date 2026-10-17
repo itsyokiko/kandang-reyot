@@ -11,7 +11,9 @@
                 @if(Auth::user()->avatar)
                     <img src="{{ Auth::user()->avatar }}" alt="{{ Auth::user()->name }}" class="w-10 h-10 rounded-2xl object-cover border border-white/20 shadow-inner flex-shrink-0">
                 @else
-                    <span class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-2xl shadow-inner flex-shrink-0">🐐</span>
+                    <div class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center p-1.5 shadow-inner flex-shrink-0">
+                        <img src="{{ asset('images/goat_logo.png') }}" alt="Logo" class="w-full h-full object-contain">
+                    </div>
                 @endif
                 <div class="min-w-0 flex-1">
                     <h3 class="font-extrabold text-sm leading-tight tracking-tight truncate">{{ Auth::user()->name }}</h3>
@@ -20,7 +22,9 @@
             </div>
         @else
             <div class="flex items-center gap-3">
-                <span class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-2xl shadow-inner">🐐</span>
+                <div class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center p-1.5 shadow-inner flex-shrink-0">
+                    <img src="{{ asset('images/goat_logo.png') }}" alt="Logo" class="w-full h-full object-contain">
+                </div>
                 <div>
                     <h3 class="font-extrabold text-sm leading-tight tracking-tight">Kandang Reyot</h3>
                     <p class="text-[11px] text-emerald-200">Menu Sekunder & Pengaturan</p>
@@ -209,8 +213,8 @@
 <!-- Modal / Bottom Sheet Tentang -->
 <x-bottom-sheet id="sheetTentang" title="Tentang Kandang Reyot">
     <div class="space-y-4 text-center py-2 text-slate-700">
-        <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-800 text-3xl flex items-center justify-center mx-auto shadow-inner">
-            🐐
+        <div class="w-16 h-16 rounded-2xl bg-emerald-100 p-2.5 flex items-center justify-center mx-auto shadow-inner">
+            <img src="{{ asset('images/goat_logo.png') }}" alt="Logo" class="w-full h-full object-contain">
         </div>
         <div>
             <h4 class="font-extrabold text-base text-slate-900 tracking-tight">Kandang Reyot</h4>

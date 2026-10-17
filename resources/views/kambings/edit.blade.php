@@ -50,8 +50,9 @@
                     <label for="ras" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                         Ras / Jenis Kambing
                     </label>
-                    <input type="text" name="ras" id="ras" value="{{ old('ras', $kambing->ras) }}"
-                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                    <input type="text" name="ras" id="ras" list="list-ras" value="{{ old('ras', $kambing->ras) }}"
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+                        placeholder="Pilih atau ketik ras (Etawa, Boer, Jawa Randu...)">
                     @error('ras')
                         <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
                     @enderror

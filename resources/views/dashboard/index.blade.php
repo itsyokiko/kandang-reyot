@@ -20,7 +20,9 @@
 <div class="relative w-full">
     <!-- 1. Integrated Header & Green Hero Container (Sticky in background) -->
     <div class="sticky top-[56px] z-0 bg-gradient-to-b from-emerald-800 via-emerald-700 to-emerald-600 px-5 pt-3 pb-16 text-white relative overflow-hidden">
-        <div class="absolute -right-4 -bottom-6 text-7xl opacity-15 select-none pointer-events-none">🐐</div>
+        <div class="absolute -right-3 -bottom-5 w-28 h-28 opacity-15 select-none pointer-events-none">
+            <img src="{{ asset('images/goat_logo.png') }}" alt="" class="w-full h-full object-contain">
+        </div>
         <div class="relative z-10 space-y-1.5">
             <div class="flex items-center justify-between">
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-emerald-100 backdrop-blur-xs">
@@ -103,23 +105,16 @@
     </div>
 
     <!-- 4. Ringkasan Singkat Populasi -->
-    <x-section-card title="Ringkasan Populasi" icon="ti ti-chart-pie" actionText="Semua Kambing" actionHref="{{ route('kambings.index') }}">
+    <x-section-card title="Penghuni Kandang" icon="ti ti-building-warehouse" actionText="Semua Kambing" actionHref="{{ route('kambings.index', ['status' => 'hidup']) }}">
         <div class="grid grid-cols-3 gap-2.5">
-            <!-- Total Kambing -->
-            <a href="{{ route('kambings.index') }}" class="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100 active:scale-95 transition">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tight block">Total Kambing</span>
-                <span class="text-xl font-black text-slate-900 leading-tight">{{ $totalKambing }}</span>
-                <span class="text-[10px] text-slate-500 block mt-0.5">ekor terdaftar</span>
+            <!-- Penghuni Kandang (Aktif / Hidup Saja) -->
+            <a href="{{ route('kambings.index', ['status' => 'hidup']) }}" class="p-3 rounded-2xl bg-emerald-50/80 border border-emerald-200/90 hover:bg-emerald-100 active:scale-95 transition">
+                <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-tight block">Penghuni Kandang</span>
+                <span class="text-xl font-black text-emerald-950 leading-tight">{{ $totalHidup }}</span>
+                <span class="text-[10px] text-emerald-600 block mt-0.5">ekor aktif di kandang</span>
             </a>
 
-            <!-- Hidup -->
-            <a href="{{ route('kambings.index', ['status' => 'hidup']) }}" class="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-100 hover:bg-emerald-100 active:scale-95 transition">
-                <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-tight block">Hidup</span>
-                <span class="text-xl font-black text-emerald-900 leading-tight">{{ $totalHidup }}</span>
-                <span class="text-[10px] text-emerald-600 block mt-0.5">populasi aktif</span>
-            </a>
-
-            <!-- Jantan & Betina -->
+            <!-- Kelamin Penghuni Aktif -->
             <div class="p-3 rounded-2xl bg-blue-50/70 border border-blue-100">
                 <span class="text-[10px] font-bold text-blue-600 uppercase tracking-tight block">Kelamin</span>
                 <div class="text-xs font-bold text-blue-900 mt-1 space-y-0.5">
@@ -128,19 +123,26 @@
                 </div>
             </div>
 
-            <!-- Dijual -->
+            <!-- Total Terdaftar Keseluruhan (Arsip & Aktif) -->
+            <a href="{{ route('kambings.index') }}" class="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100 active:scale-95 transition">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tight block">Total Riwayat</span>
+                <span class="text-xl font-black text-slate-800 leading-tight">{{ $totalKambing }}</span>
+                <span class="text-[10px] text-slate-400 block mt-0.5">termasuk arsip</span>
+            </a>
+
+            <!-- Dijual (Bukan Penghuni Kandang) -->
             <a href="{{ route('kambings.index', ['status' => 'dijual']) }}" class="p-2.5 rounded-xl bg-amber-50/60 border border-amber-100 text-center hover:bg-amber-100 active:scale-95 transition">
                 <span class="text-[10px] font-bold text-amber-700 block">Dijual</span>
                 <span class="text-sm font-black text-amber-900">{{ $totalDijual }}</span>
             </a>
 
-            <!-- Mati -->
+            <!-- Mati (Bukan Penghuni Kandang) -->
             <a href="{{ route('kambings.index', ['status' => 'mati']) }}" class="p-2.5 rounded-xl bg-rose-50/60 border border-rose-100 text-center hover:bg-rose-100 active:scale-95 transition">
                 <span class="text-[10px] font-bold text-rose-700 block">Mati</span>
                 <span class="text-sm font-black text-rose-900">{{ $totalMati }}</span>
             </a>
 
-            <!-- Anak -->
+            <!-- Anak Lahir -->
             <div class="p-2.5 rounded-xl bg-purple-50/60 border border-purple-100 text-center">
                 <span class="text-[10px] font-bold text-purple-700 block">Total Anak</span>
                 <span class="text-sm font-black text-purple-900">{{ $totalAnak }}</span>
@@ -288,7 +290,7 @@
                         <div class="space-y-2">
                             @foreach ($statistikRas as $ras)
                                 @php
-                                    $percentage = $totalKambing > 0 ? round(($ras->total / $totalKambing) * 100, 1) : 0;
+                                    $percentage = $totalHidup > 0 ? round(($ras->total / $totalHidup) * 100, 1) : 0;
                                 @endphp
                                 <div>
                                     <div class="flex justify-between text-xs font-semibold text-slate-700 mb-0.5">

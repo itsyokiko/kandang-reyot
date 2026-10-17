@@ -41,6 +41,101 @@ class Kambing extends Model
         ];
     }
 
+    /**
+     * Normalisasi teks menjadi Title Case (setiap kata berawalan huruf kapital, spasi bersih).
+     * Contoh: "urban legend" -> "Urban Legend".
+     */
+    public static function normalizeTitle(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        $cleaned = preg_replace('/\s+/', ' ', trim($value));
+        return \Illuminate\Support\Str::title($cleaned);
+    }
+
+    /**
+     * Normalisasi nama ras:
+     * 1. Case-insensitive matching dengan ras yang sudah ada.
+     * 2. Typo-tolerance (Levenshtein & similar_text) jika serupa dengan ras yang sudah ada.
+     * 3. Jika ras baru, otomatis Title Case.
+     */
+    public static function normalizeRas(?string $input): ?string
+    {
+        if ($input === null || trim($input) === '') {
+            return null;
+        }
+
+        $inputClean = preg_replace('/\s+/', ' ', trim($input));
+        $inputLower = mb_strtolower($inputClean);
+
+        // Ambil pilihan ras unik yang pernah disimpan
+        $existingBreeds = self::getAvailableRas();
+
+        if ($existingBreeds->isEmpty()) {
+            return self::normalizeTitle($inputClean);
+        }
+
+        // 1. Exact case-insensitive match
+        foreach ($existingBreeds as $breed) {
+            if (mb_strtolower($breed) === $inputLower) {
+                return $breed;
+            }
+        }
+
+        // 2. Similarity & typo check
+        $bestMatch = null;
+        $lowestDistance = 999;
+        $inputLen = mb_strlen($inputLower);
+
+        foreach ($existingBreeds as $breed) {
+            $breedLower = mb_strtolower($breed);
+            $dist = levenshtein($inputLower, $breedLower);
+            similar_text($inputLower, $breedLower, $simPercent);
+            $maxAllowedDist = $inputLen <= 4 ? 1 : 2;
+
+            if ($dist <= $maxAllowedDist && $simPercent >= 70 && $dist < $lowestDistance) {
+                $lowestDistance = $dist;
+                $bestMatch = $breed;
+            }
+        }
+
+        return $bestMatch !== null ? $bestMatch : self::normalizeTitle($inputClean);
+    }
+
+    /**
+     * Ambil daftar semua ras unik yang sudah tersimpan di database.
+     */
+    public static function getAvailableRas(): \Illuminate\Support\Collection
+    {
+        try {
+            return self::whereNotNull('ras')
+                ->where('ras', '!=', '')
+                ->distinct()
+                ->orderBy('ras')
+                ->pluck('ras');
+        } catch (\Throwable $e) {
+            return collect();
+        }
+    }
+
+    /**
+     * Mutator nama: otomatis Title Case (misal: "urban legend" -> "Urban Legend").
+     */
+    public function setNamaAttribute($value): void
+    {
+        $this->attributes['nama'] = self::normalizeTitle($value);
+    }
+
+    /**
+     * Mutator ras: otomatis normalisasi huruf, typo, & saran ras yang ada.
+     */
+    public function setRasAttribute($value): void
+    {
+        $this->attributes['ras'] = self::normalizeRas($value);
+    }
+
     public function perkawinanBetina(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Perkawinan::class, 'betina_id');

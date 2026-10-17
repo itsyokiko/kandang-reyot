@@ -33,4 +33,9 @@ class PengingatPerawatan extends Model
     {
         return $this->belongsTo(Kambing::class, 'kambing_id');
     }
+
+    public function setJenisPerawatanAttribute($value): void
+    {
+        $this->attributes['jenis_perawatan'] = Kambing::normalizeTitle($value);
+    }
 }

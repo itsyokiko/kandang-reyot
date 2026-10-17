@@ -249,7 +249,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
                             <label class="block text-[11px] font-bold text-slate-600 mb-1">Ras (Opsional)</label>
-                            <input type="text" name="anak[0][ras]" placeholder="Ikuti induk jika kosong"
+                            <input type="text" name="anak[0][ras]" list="list-ras" placeholder="Pilih atau ketik ras..."
                                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500">
                         </div>
                         <div>
