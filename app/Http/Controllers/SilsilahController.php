@@ -35,21 +35,61 @@ class SilsilahController extends Controller
             'pejantan.pejantan',
         ]);
 
-        // Siblings (from same birth if available, or both same parents)
-        if ($kambing->kelahiran_id) {
-            $saudara = Kambing::where('kelahiran_id', $kambing->kelahiran_id)
-                ->where('id', '!=', $kambing->id)
-                ->get();
-        } elseif ($kambing->induk_id && $kambing->pejantan_id) {
-            $saudara = Kambing::where('induk_id', $kambing->induk_id)
+        // Siblings in Big Family Tree:
+        // 1. Saudara Kandung (Ibu & Bapak sama)
+        // 2. Saudara Se-Induk (Ibu sama, Bapak beda / luar)
+        // 3. Saudara Se-Bapak (Bapak sama, Ibu beda)
+        $saudaraKandung = collect();
+        $saudaraSeinduk = collect();
+        $saudaraSebapak = collect();
+
+        if ($kambing->induk_id && $kambing->pejantan_id) {
+            $saudaraKandung = Kambing::where('induk_id', $kambing->induk_id)
                 ->where('pejantan_id', $kambing->pejantan_id)
                 ->where('id', '!=', $kambing->id)
                 ->get();
-        } else {
-            $saudara = collect();
         }
 
-        // Children and grandchildren
+        if ($kambing->induk_id) {
+            $query = Kambing::where('induk_id', $kambing->induk_id)
+                ->where('id', '!=', $kambing->id);
+            if ($kambing->pejantan_id) {
+                $query->where(function ($q) use ($kambing) {
+                    $q->whereNull('pejantan_id')->orWhere('pejantan_id', '!=', $kambing->pejantan_id);
+                });
+            }
+            $saudaraSeinduk = $query->get();
+        }
+
+        if ($kambing->pejantan_id) {
+            $query = Kambing::where('pejantan_id', $kambing->pejantan_id)
+                ->where('id', '!=', $kambing->id);
+            if ($kambing->induk_id) {
+                $query->where(function ($q) use ($kambing) {
+                    $q->whereNull('induk_id')->orWhere('induk_id', '!=', $kambing->induk_id);
+                });
+            }
+            $saudaraSebapak = $query->get();
+        }
+
+        $allSaudara = collect();
+        foreach ($saudaraKandung as $s) {
+            $node = $this->formatNode($s, 'saudara_kandung');
+            $node['tipe_saudara'] = 'Saudara Kandung';
+            $allSaudara->push($node);
+        }
+        foreach ($saudaraSeinduk as $s) {
+            $node = $this->formatNode($s, 'saudara_seinduk');
+            $node['tipe_saudara'] = 'Se-Induk (Beda Bapak)';
+            $allSaudara->push($node);
+        }
+        foreach ($saudaraSebapak as $s) {
+            $node = $this->formatNode($s, 'saudara_sebapak');
+            $node['tipe_saudara'] = 'Se-Bapak (Beda Induk)';
+            $allSaudara->push($node);
+        }
+
+        // Children and grandchildren (Big Family Unions: group by partner)
         $childrenQuery = $kambing->jenis_kelamin === 'betina'
             ? $kambing->anakSebagaiInduk()
             : $kambing->anakSebagaiPejantan();
@@ -61,18 +101,35 @@ class SilsilahController extends Controller
             'anakSebagaiPejantan',
         ])->get();
 
-        $childrenData = $children->map(function ($child) use ($kambing) {
+        $unions = [];
+        $flatChildren = [];
+
+        foreach ($children as $child) {
             $pasangan = $kambing->jenis_kelamin === 'betina' ? $child->pejantan : $child->induk;
+            $partnerKey = $pasangan ? ('kambing_' . $pasangan->id) : 'tanpa_pasangan';
+
+            if (!isset($unions[$partnerKey])) {
+                $unions[$partnerKey] = [
+                    'pasangan' => $pasangan ? $this->formatNode($pasangan, 'pasangan') : null,
+                    'label_pasangan' => $pasangan ? $pasangan->nama : 'Tanpa Pasangan Tercatat',
+                    'is_luar' => $pasangan && str_contains(strtolower($pasangan->catatan ?? ''), 'luar'),
+                    'anak_list' => [],
+                ];
+            }
+
             $cucus = $child->jenis_kelamin === 'betina'
                 ? $child->anakSebagaiInduk
                 : $child->anakSebagaiPejantan;
 
-            return [
+            $childItem = [
                 'anak' => $this->formatNode($child, 'anak'),
                 'pasangan' => $this->formatNode($pasangan, 'pasangan'),
                 'cucu' => $cucus->map(fn ($c) => $this->formatNode($c, 'cucu'))->values()->all(),
             ];
-        })->values()->all();
+
+            $unions[$partnerKey]['anak_list'][] = $childItem;
+            $flatChildren[] = $childItem;
+        }
 
         return [
             'pusat' => $this->formatNode($kambing, 'pusat'),
@@ -86,8 +143,9 @@ class SilsilahController extends Controller
                 'kakek_dari_ibu' => $this->formatNode($kambing->induk?->pejantan, 'kakek_ibu'),
                 'nenek_dari_ibu' => $this->formatNode($kambing->induk?->induk, 'nenek_ibu'),
             ],
-            'saudara' => $saudara->map(fn ($s) => $this->formatNode($s, 'saudara'))->values()->all(),
-            'keturunan' => $childrenData,
+            'saudara' => $allSaudara->values()->all(),
+            'keturunan' => $flatChildren,
+            'unions' => array_values($unions),
         ];
     }
 
@@ -96,6 +154,8 @@ class SilsilahController extends Controller
         if (!$kambing) {
             return null;
         }
+
+        $isLuar = str_contains(strtolower($kambing->catatan ?? ''), 'luar');
 
         return [
             'id' => $kambing->id,
@@ -107,6 +167,8 @@ class SilsilahController extends Controller
             'foto_url' => $kambing->foto ? asset('storage/' . $kambing->foto) : null,
             'detail_url' => route('kambings.show', $kambing),
             'role' => $role,
+            'is_luar' => $isLuar,
+            'catatan' => $kambing->catatan,
         ];
     }
 }

@@ -137,6 +137,10 @@
                     <span>Betina</span>
                 </div>
                 <div class="flex items-center gap-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span class="text-amber-300">Pejantan Luar</span>
+                </div>
+                <div class="flex items-center gap-1">
                     <span class="w-3 h-3 rounded-md bg-emerald-500 ring-2 ring-emerald-300"></span>
                     <span class="font-bold text-emerald-300">Pusat</span>
                 </div>
@@ -144,9 +148,9 @@
 
             <!-- Pan-Zoom Tree Surface -->
             <div id="tree-surface" class="absolute cursor-grab active:cursor-grabbing origin-top-left"
-                 style="width: 3200px; height: 1800px; transform: translate(0px, 0px) scale(1);">
+                 style="width: 3200px; height: 2000px; transform: translate(0px, 0px) scale(1);">
                 <!-- SVG Connector Lines Layer -->
-                <svg id="tree-svg-lines" class="absolute inset-0 pointer-events-none" width="3200" height="1800" style="overflow: visible;"></svg>
+                <svg id="tree-svg-lines" class="absolute inset-0 pointer-events-none" width="3200" height="2000" style="overflow: visible;"></svg>
 
                 <!-- HTML Nodes Layer -->
                 <div id="tree-nodes-container" class="absolute inset-0 pointer-events-auto"></div>
@@ -480,6 +484,9 @@
                 const isJantan = node.jenis_kelamin === 'jantan';
 
                 let borderClass = isJantan ? 'border-blue-400 bg-blue-950/80 text-blue-100' : 'border-pink-400 bg-pink-950/80 text-pink-100';
+                if (node.is_luar) {
+                    borderClass = 'border-amber-400 bg-amber-950/90 text-amber-100 ring-2 ring-amber-500/40 shadow-lg';
+                }
                 if (isPusat) {
                     borderClass = 'border-emerald-400 bg-emerald-950/90 text-emerald-100 ring-4 ring-emerald-500/50 shadow-2xl';
                 }
@@ -495,19 +502,25 @@
                 let roleBadge = '';
                 if (isPusat) {
                     roleBadge = `<span class="bg-emerald-500 text-emerald-950 text-[10px] font-extrabold px-1.5 py-0.2 rounded uppercase">Pusat</span>`;
+                } else if (node.is_luar) {
+                    roleBadge = `<span class="bg-amber-500 text-amber-950 text-[9px] font-extrabold px-1.5 py-0.2 rounded uppercase">Pejantan Luar</span>`;
+                } else if (node.tipe_saudara) {
+                    roleBadge = `<span class="bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded">${node.tipe_saudara}</span>`;
                 } else if (roleLabel) {
                     roleBadge = `<span class="text-[10px] opacity-75 uppercase">${roleLabel.replace('_', ' ')}</span>`;
                 }
 
                 const imgHtml = node.foto_url
                     ? `<img src="${node.foto_url}" class="w-10 h-10 rounded-lg object-cover border border-white/20 flex-shrink-0">`
-                    : `<div class="w-10 h-10 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center text-lg flex-shrink-0">🐐</div>`;
+                    : `<div class="w-10 h-10 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center text-lg flex-shrink-0">${node.is_luar ? '🏡' : '🐐'}</div>`;
 
                 card.innerHTML = `
                     ${imgHtml}
                     <div class="overflow-hidden flex-1 leading-tight">
                         <div class="flex items-center justify-between gap-1 mb-0.5">
-                            <span class="text-xs font-semibold ${isJantan ? 'text-blue-300' : 'text-pink-300'}">${isJantan ? '♂ Jantan' : '♀ Betina'}</span>
+                            <span class="text-xs font-semibold ${node.is_luar ? 'text-amber-300' : (isJantan ? 'text-blue-300' : 'text-pink-300')}">
+                                ${isJantan ? '♂ Jantan' : '♀ Betina'}
+                            </span>
                             ${roleBadge}
                         </div>
                         <h4 class="font-bold text-sm text-white truncate" title="${node.nama}">${node.nama}</h4>
@@ -544,13 +557,14 @@
             const Y_GRANDPARENTS = 130;  // Gen -2
             const Y_PARENTS = 330;        // Gen -1
             const Y_PUSAT = 550;          // Gen 0
-            const Y_CHILDREN = 770;       // Gen +1
-            const Y_GRANDCHILDREN = 990;  // Gen +2
+            const Y_PARTNERS = 730;       // Pasangan / Unions
+            const Y_CHILDREN = 920;       // Gen +1
+            const Y_GRANDCHILDREN = 1110; // Gen +2
 
             // 1. Render Pusat
             const pusatPos = addNodeCard(data.pusat, CENTER_X, Y_PUSAT, 'pusat');
 
-            // 2. Render Siblings
+            // 2. Render Siblings (Keluarga Besar: Kandung, Se-Induk, Se-Bapak)
             const saudaraList = data.saudara || [];
             if (saudaraList.length > 0) {
                 const spacing = 220;
@@ -558,7 +572,7 @@
                     const side = i % 2 === 0 ? 1 : -1;
                     const offset = Math.ceil((i + 1) / 2) * spacing * side;
                     const sX = CENTER_X + offset;
-                    addNodeCard(s, sX, Y_PUSAT, 'saudara');
+                    addNodeCard(s, sX, Y_PUSAT, s.role || 'saudara');
                 });
             }
 
@@ -628,33 +642,78 @@
                 }
             }
 
-            // 5. Render Children and Grandchildren
-            const keturunanList = data.keturunan || [];
-            if (keturunanList.length > 0) {
-                const childCount = keturunanList.length;
-                const totalWidth = (childCount - 1) * 240;
-                const startChildX = CENTER_X - (totalWidth / 2);
+            // 5. Render Children and Grandchildren (Unions - Keluarga Besar)
+            const unions = data.unions || [];
+            if (unions.length > 0) {
+                const unionWidths = unions.map(u => Math.max((u.anak_list || []).length * 220, 240));
+                const totalUnionsWidth = unionWidths.reduce((a, b) => a + b, 0) + (unions.length - 1) * 80;
+                let currentLeft = CENTER_X - (totalUnionsWidth / 2);
 
-                keturunanList.forEach((item, idx) => {
-                    const child = item.anak;
-                    const cX = startChildX + (idx * 240);
-                    const childPos = addNodeCard(child, cX, Y_CHILDREN, 'anak');
+                unions.forEach((union, uIdx) => {
+                    const uWidth = unionWidths[uIdx];
+                    const uCenterX = currentLeft + (uWidth / 2);
+                    currentLeft += uWidth + 80;
 
-                    drawCurve(pusatPos.x, pusatPos.y + (NODE_HEIGHT / 2), childPos.x, childPos.y - (NODE_HEIGHT / 2), '#10b981');
+                    let unionBranchSourceX = pusatPos.x;
+                    let unionBranchSourceY = pusatPos.y + (NODE_HEIGHT / 2);
 
-                    const cucuList = item.cucu || [];
-                    if (cucuList.length > 0) {
-                        const cucuCount = cucuList.length;
-                        const cucuTotalWidth = (cucuCount - 1) * 200;
-                        const startCucuX = cX - (cucuTotalWidth / 2);
+                    if (union.pasangan) {
+                        const partnerRole = union.is_luar ? 'Pejantan Luar' : 'Pasangan';
+                        const partnerPos = addNodeCard(union.pasangan, uCenterX, Y_PARTNERS, partnerRole);
+                        drawCurve(pusatPos.x, pusatPos.y + (NODE_HEIGHT / 2), partnerPos.x, partnerPos.y - (NODE_HEIGHT / 2), '#ec4899');
+                        unionBranchSourceX = partnerPos.x;
+                        unionBranchSourceY = partnerPos.y + (NODE_HEIGHT / 2);
+                    }
 
-                        cucuList.forEach((cucu, cIdx) => {
-                            const cucuX = startCucuX + (cIdx * 200);
-                            const cucuPos = addNodeCard(cucu, cucuX, Y_GRANDCHILDREN, 'cucu');
-                            drawCurve(childPos.x, childPos.y + (NODE_HEIGHT / 2), cucuPos.x, cucuPos.y - (NODE_HEIGHT / 2), '#06b6d4');
+                    const anakList = union.anak_list || [];
+                    if (anakList.length > 0) {
+                        const startChildX = uCenterX - (((anakList.length - 1) * 220) / 2);
+
+                        anakList.forEach((childItem, cIdx) => {
+                            const cX = startChildX + (cIdx * 220);
+                            const childPos = addNodeCard(childItem.anak, cX, Y_CHILDREN, 'anak');
+                            drawCurve(unionBranchSourceX, unionBranchSourceY, childPos.x, childPos.y - (NODE_HEIGHT / 2), '#10b981');
+
+                            const cucuList = childItem.cucu || [];
+                            if (cucuList.length > 0) {
+                                const startCucuX = cX - (((cucuList.length - 1) * 190) / 2);
+                                cucuList.forEach((cucu, cucuIdx) => {
+                                    const cucuX = startCucuX + (cucuIdx * 190);
+                                    const cucuPos = addNodeCard(cucu, cucuX, Y_GRANDCHILDREN, 'cucu');
+                                    drawCurve(childPos.x, childPos.y + (NODE_HEIGHT / 2), cucuPos.x, cucuPos.y - (NODE_HEIGHT / 2), '#06b6d4');
+                                });
+                            }
                         });
                     }
                 });
+            } else {
+                const keturunanList = data.keturunan || [];
+                if (keturunanList.length > 0) {
+                    const childCount = keturunanList.length;
+                    const totalWidth = (childCount - 1) * 240;
+                    const startChildX = CENTER_X - (totalWidth / 2);
+
+                    keturunanList.forEach((item, idx) => {
+                        const child = item.anak;
+                        const cX = startChildX + (idx * 240);
+                        const childPos = addNodeCard(child, cX, Y_CHILDREN, 'anak');
+
+                        drawCurve(pusatPos.x, pusatPos.y + (NODE_HEIGHT / 2), childPos.x, childPos.y - (NODE_HEIGHT / 2), '#10b981');
+
+                        const cucuList = item.cucu || [];
+                        if (cucuList.length > 0) {
+                            const cucuCount = cucuList.length;
+                            const cucuTotalWidth = (cucuCount - 1) * 200;
+                            const startCucuX = cX - (cucuTotalWidth / 2);
+
+                            cucuList.forEach((cucu, cIdx) => {
+                                const cucuX = startCucuX + (cIdx * 200);
+                                const cucuPos = addNodeCard(cucu, cucuX, Y_GRANDCHILDREN, 'cucu');
+                                drawCurve(childPos.x, childPos.y + (NODE_HEIGHT / 2), cucuPos.x, cucuPos.y - (NODE_HEIGHT / 2), '#06b6d4');
+                            });
+                        }
+                    });
+                }
             }
         }
 

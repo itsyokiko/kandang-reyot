@@ -3,6 +3,7 @@
     $isModal = $isModal ?? false;
     $today = date('Y-m-d');
     $allKambingsJson = isset($allKambings) ? $allKambings->toJson() : '[]';
+    $pejantansJson = isset($pejantans) ? $pejantans->map(fn($p) => ['id' => $p->id, 'nama' => $p->nama, 'ras' => $p->ras])->toJson() : '[]';
 @endphp
 
 <div id="{{ $prefix }}kelahiran_app" class="space-y-4">
@@ -53,11 +54,17 @@
         </div>
 
         <div>
-            <label for="{{ $prefix }}pejantan_id" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Pejantan <span class="text-rose-500">*</span>
-            </label>
-            <select name="pejantan_id" id="{{ $prefix }}pejantan_id" required
-                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+            <div class="flex items-center justify-between mb-1">
+                <label for="{{ $prefix }}pejantan_id" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Pejantan Utama
+                </label>
+                <label class="inline-flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-slate-500 hover:text-slate-800 select-none">
+                    <input type="checkbox" id="{{ $prefix }}chk_tanpa_pejantan" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5">
+                    <span>Tanpa Pejantan Utama</span>
+                </label>
+            </div>
+            <select name="pejantan_id" id="{{ $prefix }}pejantan_id"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
                 <option value="">-- Pilih Pejantan --</option>
                 @foreach ($pejantans as $p)
                     <option value="{{ $p->id }}" data-ras="{{ $p->ras }}"
@@ -66,6 +73,9 @@
                     </option>
                 @endforeach
             </select>
+            <p id="{{ $prefix }}help_tanpa_pejantan" class="text-[10px] text-slate-400 mt-1 hidden">
+                Pejantan utama dinonaktifkan. Bapak dapat ditentukan per anak di bawah (atau dibiarkan kosong).
+            </p>
             @error('pejantan_id')
                 <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
             @enderror
@@ -155,10 +165,13 @@
 (function() {
     const P = "{{ $prefix }}";
     const allKambings = {!! $allKambingsJson !!};
+    const pejantansList = {!! $pejantansJson !!};
 
     const elPerkawinan = document.getElementById(P + 'perkawinan_id');
     const elInduk = document.getElementById(P + 'induk_id');
     const elPejantan = document.getElementById(P + 'pejantan_id');
+    const elChkTanpaPejantan = document.getElementById(P + 'chk_tanpa_pejantan');
+    const elHelpTanpaPejantan = document.getElementById(P + 'help_tanpa_pejantan');
     const elContainerAnak = document.getElementById(P + 'container_anak');
     const elBtnTambah = document.getElementById(P + 'btn_tambah_anak');
     const elPanelRelasi = document.getElementById(P + 'panel_relasi');
@@ -174,9 +187,23 @@
         return allKambings.find(k => k.nama && k.nama.trim().toLowerCase() === clean) || null;
     }
 
-    // Helper: Cari kambing di memori lokal berdasarkan ID
-    function findKambingById(id) {
-        return allKambings.find(k => String(k.id) === String(id)) || null;
+    // Update state Pejantan Utama (Disabled vs Enabled)
+    function updatePejantanUtamaState() {
+        if (!elPejantan) return;
+        const isTanpa = elChkTanpaPejantan && elChkTanpaPejantan.checked;
+        elPejantan.disabled = isTanpa;
+        if (isTanpa) {
+            elPejantan.value = '';
+            if (elHelpTanpaPejantan) elHelpTanpaPejantan.classList.remove('hidden');
+        } else {
+            if (elHelpTanpaPejantan) elHelpTanpaPejantan.classList.add('hidden');
+        }
+        updateAllChildFatherOptions();
+        refreshRelasiSuggestions();
+    }
+
+    if (elChkTanpaPejantan) {
+        elChkTanpaPejantan.addEventListener('change', updatePejantanUtamaState);
     }
 
     // Perkawinan select -> auto isi induk & pejantan
@@ -184,22 +211,53 @@
         elPerkawinan.addEventListener('change', function() {
             const opt = this.options[this.selectedIndex];
             if (opt && opt.value) {
+                if (elChkTanpaPejantan) {
+                    elChkTanpaPejantan.checked = false;
+                    updatePejantanUtamaState();
+                }
                 const bId = opt.getAttribute('data-betina');
                 const pId = opt.getAttribute('data-pejantan');
                 if (bId && elInduk) elInduk.value = bId;
                 if (pId && elPejantan) elPejantan.value = pId;
+                updateAllChildFatherOptions();
                 refreshRelasiSuggestions();
             }
         });
     }
 
     if (elInduk) elInduk.addEventListener('change', refreshRelasiSuggestions);
-    if (elPejantan) elPejantan.addEventListener('change', refreshRelasiSuggestions);
+    if (elPejantan) elPejantan.addEventListener('change', function() {
+        updateAllChildFatherOptions();
+        refreshRelasiSuggestions();
+    });
+
+    // Helper: dapatkan label untuk opsi 'Ikuti Pejantan Utama'
+    function getMainPejantanLabel() {
+        if (elChkTanpaPejantan && elChkTanpaPejantan.checked) {
+            return '-- Tanpa Bapak / Kosong --';
+        }
+        if (elPejantan && elPejantan.value && elPejantan.selectedOptions[0]) {
+            const pNama = elPejantan.selectedOptions[0].textContent.trim();
+            return `-- Ikuti Pejantan Utama (${pNama}) --`;
+        }
+        return '-- Ikuti Pejantan Utama (Belum dipilih) --';
+    }
+
+    // Update teks opsi pertama di semua kartu anak
+    function updateAllChildFatherOptions() {
+        const defaultLabel = getMainPejantanLabel();
+        const selects = elContainerAnak.querySelectorAll('.field-anak-pejantan');
+        selects.forEach(sel => {
+            if (sel.options[0]) {
+                sel.options[0].textContent = defaultLabel;
+            }
+        });
+    }
 
     // Refresh banner suggestion anak terdaftar
     function refreshRelasiSuggestions() {
         const indukId = elInduk ? elInduk.value : '';
-        const pejantanId = elPejantan ? elPejantan.value : '';
+        const pejantanId = (!elChkTanpaPejantan || !elChkTanpaPejantan.checked) && elPejantan ? elPejantan.value : '';
 
         if (!indukId) {
             elPanelRelasi.classList.add('hidden');
@@ -280,10 +338,26 @@
         const ras = data.ras || (elInduk && elInduk.selectedOptions[0] ? elInduk.selectedOptions[0].dataset.ras || '' : '');
         const kambingId = data.kambing_id || '';
         const catatan = data.catatan || '';
+        const pejantanChildId = data.pejantan_id !== undefined ? String(data.pejantan_id) : '';
+        const namaPejantanLuar = data.nama_pejantan_luar || '';
+
         const isMatched = !!kambingId;
+        const defaultPejantanLabel = getMainPejantanLabel();
+
+        // Generate options for Pejantans
+        let pejantanOptionsHtml = `<option value="">${defaultPejantanLabel}</option>`;
+        pejantanOptionsHtml += `<option value="none" ${pejantanChildId === 'none' ? 'selected' : ''}>-- Tanpa Bapak / Tidak Diketahui --</option>`;
+
+        pejantansList.forEach(p => {
+            const isSel = pejantanChildId && String(p.id) === pejantanChildId ? 'selected' : '';
+            pejantanOptionsHtml += `<option value="${p.id}" ${isSel}>♂ ${p.nama} ${p.ras ? '(' + p.ras + ')' : ''}</option>`;
+        });
+
+        const isLuar = !!namaPejantanLuar || pejantanChildId === '__luar__';
+        pejantanOptionsHtml += `<option value="__luar__" ${isLuar ? 'selected' : ''}>+ Pejantan Luar Kandang (Ketik Nama)</option>`;
 
         const card = document.createElement('div');
-        card.className = 'item-anak-card bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-3';
+        card.className = 'item-anak-card bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-3 transition';
         card.dataset.index = index;
 
         card.innerHTML = `
@@ -296,102 +370,203 @@
 
             <input type="hidden" name="anak[${index}][kambing_id]" class="field-kambing-id" value="${kambingId}">
 
-            <!-- Nama & Badge -->
-            <div>
-                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Nama Anak <span class="text-rose-500">*</span>
-                </label>
-                <input type="text" name="anak[${index}][nama]" list="${P}datalist_kambings" value="${nama}" required
-                    autocomplete="off"
-                    class="field-nama w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Ketik nama atau pilih kambing yang sudah ada...">
-
-                <!-- Indikator Auto-Match -->
-                <div class="badge-matched ${isMatched ? '' : 'hidden'} mt-1.5 flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                    <i class="ti ti-check text-xs"></i>
-                    <span>Kambing terdaftar di kandang (Data otomatis terisi)</span>
-                </div>
-            </div>
-
-            <!-- Jenis Kelamin & Tanggal Lahir -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- VIEW 1: Form Input Mode (Saat kambing belum dipilih atau sedang diedit) -->
+            <div class="box-child-edit ${isMatched ? 'hidden' : 'space-y-3'}">
+                <!-- Nama Anak -->
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                        Jenis Kelamin <span class="text-rose-500">*</span>
+                        Nama Anak <span class="text-rose-500">*</span>
                     </label>
-                    <select name="anak[${index}][jenis_kelamin]" required
-                        class="field-jk w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <option value="jantan" ${jk === 'jantan' ? 'selected' : ''}>♂ Jantan</option>
-                        <option value="betina" ${jk === 'betina' ? 'selected' : ''}>♀ Betina</option>
-                    </select>
+                    <input type="text" name="anak[${index}][nama]" list="${P}datalist_kambings" value="${nama}"
+                        autocomplete="off"
+                        class="field-nama w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        placeholder="Ketik nama anak atau pilih kambing yang sudah ada...">
+                    <p class="text-[10px] text-slate-400 mt-1">Pilih dari saran nama jika anak sudah terdaftar di kandang</p>
                 </div>
 
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                        Tanggal Lahir <span class="text-rose-500">*</span>
-                    </label>
-                    <input type="date" name="anak[${index}][tanggal_lahir]" value="${tgl}" required
-                        class="field-tgl w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    <span class="text-[10px] text-slate-400">Anak dengan tanggal berbeda dicatat sebagai kelahiran terpisah</span>
-                </div>
-            </div>
+                <!-- Jenis Kelamin & Tanggal Lahir -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                            Jenis Kelamin <span class="text-rose-500">*</span>
+                        </label>
+                        <select name="anak[${index}][jenis_kelamin]"
+                            class="field-jk w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="jantan" ${jk === 'jantan' ? 'selected' : ''}>♂ Jantan</option>
+                            <option value="betina" ${jk === 'betina' ? 'selected' : ''}>♀ Betina</option>
+                        </select>
+                    </div>
 
-            <!-- Ras & Catatan -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                            Tanggal Lahir <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="date" name="anak[${index}][tanggal_lahir]" value="${tgl}"
+                            class="field-tgl w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+
+                <!-- Ras -->
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Ras (Opsional)</label>
                     <input type="text" name="anak[${index}][ras]" value="${ras}" list="list-ras"
                         class="field-ras w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         placeholder="Ikuti ras induk jika kosong">
                 </div>
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Catatan Anak</label>
-                    <input type="text" name="anak[${index}][catatan]" value="${catatan}"
-                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        placeholder="Kondisi fisik, ciri khusus...">
+            </div>
+
+            <!-- VIEW 2: Selected Child Card View (Collapsed saat kambing terpilih dari database) -->
+            <div class="box-child-selected ${isMatched ? '' : 'hidden'} bg-emerald-50/90 border border-emerald-300 rounded-xl p-3 flex items-center justify-between gap-3 shadow-2xs">
+                <div class="flex items-center gap-2.5 overflow-hidden">
+                    <div class="badge-jk-icon w-8 h-8 rounded-lg ${jk === 'jantan' ? 'bg-blue-600' : 'bg-pink-600'} text-white font-extrabold text-sm flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        ${jk === 'jantan' ? '♂' : '♀'}
+                    </div>
+                    <div class="overflow-hidden leading-tight">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="preview-nama text-xs font-extrabold text-emerald-950 truncate">${nama}</span>
+                            <span class="text-[9px] font-extrabold bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded uppercase">Sudah Ada di Kandang</span>
+                        </div>
+                        <p class="preview-info text-[11px] text-emerald-800 mt-0.5">
+                            Lahir: <span class="preview-tgl font-semibold">${tgl}</span> · Ras: <span class="preview-ras font-semibold">${ras || '-'}</span>
+                        </p>
+                    </div>
                 </div>
+                <button type="button" class="btn-ubah-anak text-[11px] font-bold text-emerald-800 hover:text-emerald-950 bg-white border border-emerald-300 px-2.5 py-1.5 rounded-lg shadow-2xs hover:bg-emerald-100 active:scale-95 transition whitespace-nowrap">
+                    Ubah
+                </button>
+            </div>
+
+            <!-- BAGIAN BAPAK / PEJANTAN ANAK (Selalu Aktif & Terlihat) -->
+            <div class="pt-2 border-t border-slate-200/80 space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                        Bapak / Pejantan Anak Ini
+                    </label>
+                    <span class="text-[10px] text-slate-500">Bisa diatur beda tiap anak</span>
+                </div>
+
+                <select name="anak[${index}][pejantan_id]"
+                    class="field-anak-pejantan w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    ${pejantanOptionsHtml}
+                </select>
+
+                <!-- Input Khusus Jika Pejantan Luar Kandang -->
+                <div class="box-pejantan-luar ${isLuar ? '' : 'hidden'} space-y-1">
+                    <input type="text" name="anak[${index}][nama_pejantan_luar]" value="${namaPejantanLuar}"
+                        class="field-nama-pejantan-luar w-full px-3 py-2 bg-amber-50/80 border border-amber-300 rounded-xl text-xs font-semibold text-amber-950 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder-amber-500/70"
+                        placeholder="Ketik nama pejantan luar (misal: Si Hitam - Kambing Pak RT)...">
+                    <p class="text-[10px] text-amber-700">
+                        Pejantan luar akan otomatis dicatat ke sistem dan terhubung di pohon silsilah keluarga besar.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Catatan Anak -->
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Catatan Anak (Opsional)</label>
+                <input type="text" name="anak[${index}][catatan]" value="${catatan}"
+                    class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Ciri fisik khusus, warna bulu, bobot lahir...">
             </div>
         `;
 
-        // Event listener saat user mengetik nama anak -> auto populate jika cocok kambing di database
+        // Element references
+        const boxEdit = card.querySelector('.box-child-edit');
+        const boxSelected = card.querySelector('.box-child-selected');
         const inputNama = card.querySelector('.field-nama');
         const inputKambingId = card.querySelector('.field-kambing-id');
         const inputJk = card.querySelector('.field-jk');
         const inputTgl = card.querySelector('.field-tgl');
         const inputRas = card.querySelector('.field-ras');
-        const badgeMatched = card.querySelector('.badge-matched');
+        const selectPejantan = card.querySelector('.field-anak-pejantan');
+        const boxPejantanLuar = card.querySelector('.box-pejantan-luar');
+        const inputPejantanLuar = card.querySelector('.field-nama-pejantan-luar');
+        const btnUbah = card.querySelector('.btn-ubah-anak');
 
-        function onNamaChange() {
-            const val = inputNama.value.trim();
-            const matched = findKambingByName(val);
+        const previewNama = card.querySelector('.preview-nama');
+        const previewTgl = card.querySelector('.preview-tgl');
+        const previewRas = card.querySelector('.preview-ras');
+        const badgeJkIcon = card.querySelector('.badge-jk-icon');
 
-            if (matched) {
-                inputKambingId.value = matched.id;
-                if (matched.jenis_kelamin) inputJk.value = matched.jenis_kelamin;
-                if (matched.tanggal_lahir) inputTgl.value = matched.tanggal_lahir;
-                if (matched.ras) inputRas.value = matched.ras;
-                badgeMatched.classList.remove('hidden');
-
-                // Jika kambing punya bapak di DB, dan pejantan form belum dipilih -> set pejantan form
-                if (matched.pejantan_id && elPejantan && !elPejantan.value) {
-                    elPejantan.value = matched.pejantan_id;
-                }
-                // Jika kambing punya induk di DB, dan induk form belum dipilih -> set induk form
-                if (matched.induk_id && elInduk && !elInduk.value) {
-                    elInduk.value = matched.induk_id;
-                }
+        // Handler untuk pilihan Pejantan Anak
+        selectPejantan.addEventListener('change', function() {
+            if (this.value === '__luar__') {
+                boxPejantanLuar.classList.remove('hidden');
+                inputPejantanLuar.focus();
             } else {
-                inputKambingId.value = '';
-                badgeMatched.classList.add('hidden');
-                // Jika ras kosong, ambil default dari induk yang dipilih
-                if (!inputRas.value && elInduk && elInduk.selectedOptions[0]) {
-                    inputRas.value = elInduk.selectedOptions[0].dataset.ras || '';
-                }
+                boxPejantanLuar.classList.add('hidden');
+                inputPejantanLuar.value = '';
+            }
+        });
+
+        // Function: Switch to Collapsed Selected View
+        function switchToSelected(kambing) {
+            inputKambingId.value = kambing.id;
+            inputNama.value = kambing.nama;
+            if (kambing.jenis_kelamin) inputJk.value = kambing.jenis_kelamin;
+            if (kambing.tanggal_lahir) inputTgl.value = kambing.tanggal_lahir;
+            if (kambing.ras) inputRas.value = kambing.ras;
+
+            previewNama.textContent = kambing.nama;
+            previewTgl.textContent = kambing.tanggal_lahir || '-';
+            previewRas.textContent = kambing.ras || '-';
+
+            const isJ = kambing.jenis_kelamin === 'jantan';
+            badgeJkIcon.textContent = isJ ? '♂' : '♀';
+            badgeJkIcon.className = `badge-jk-icon w-8 h-8 rounded-lg ${isJ ? 'bg-blue-600' : 'bg-pink-600'} text-white font-extrabold text-sm flex items-center justify-center flex-shrink-0 shadow-2xs`;
+
+            boxEdit.classList.add('hidden');
+            boxSelected.classList.remove('hidden');
+
+            // Jika kambing punya bapak di DB, set select pejantan anak
+            if (kambing.pejantan_id) {
+                selectPejantan.value = kambing.pejantan_id;
+                boxPejantanLuar.classList.add('hidden');
+            }
+
+            // Jika induk form belum dipilih dan kambing punya induk_id, auto-select induk form
+            if (kambing.induk_id && elInduk && !elInduk.value) {
+                elInduk.value = kambing.induk_id;
+                refreshRelasiSuggestions();
             }
         }
 
-        inputNama.addEventListener('input', onNamaChange);
-        inputNama.addEventListener('change', onNamaChange);
+        // Function: Switch back to Edit Mode
+        function switchToEdit() {
+            inputKambingId.value = '';
+            boxSelected.classList.add('hidden');
+            boxEdit.classList.remove('hidden');
+            inputNama.focus();
+        }
+
+        btnUbah.addEventListener('click', switchToEdit);
+
+        // Realtime typing check: jika user memilih atau mengetik nama kambing terdaftar
+        function checkNamaMatch() {
+            const val = inputNama.value.trim();
+            if (!val) return;
+            const matched = findKambingByName(val);
+            if (matched) {
+                switchToSelected(matched);
+            }
+        }
+
+        inputNama.addEventListener('change', checkNamaMatch);
+        inputNama.addEventListener('input', function() {
+            const val = this.value.trim();
+            const matched = findKambingByName(val);
+            if (matched) {
+                switchToSelected(matched);
+            }
+        });
+
+        // Jika initial data sudah punya kambing_id
+        if (data.kambing_id) {
+            const matched = allKambings.find(k => String(k.id) === String(data.kambing_id));
+            if (matched) {
+                switchToSelected(matched);
+            }
+        }
 
         return card;
     }
@@ -411,11 +586,13 @@
         const currentCards = elContainerAnak.querySelectorAll('.item-anak-card');
         if (currentCards.length === 1) {
             const firstInputNama = currentCards[0].querySelector('.field-nama');
-            if (firstInputNama && !firstInputNama.value.trim() && data.nama) {
+            const firstKambingId = currentCards[0].querySelector('.field-kambing-id');
+            if (firstInputNama && !firstInputNama.value.trim() && !firstKambingId.value && data.nama) {
                 firstInputNama.value = data.nama;
                 firstInputNama.dispatchEvent(new Event('change'));
-                if (data.pejantan_id && elPejantan && !elPejantan.value) {
-                    elPejantan.value = data.pejantan_id;
+                if (data.pejantan_id) {
+                    const selPejantan = currentCards[0].querySelector('.field-anak-pejantan');
+                    if (selPejantan) selPejantan.value = data.pejantan_id;
                 }
                 return;
             }
@@ -425,11 +602,6 @@
         const card = renderAnakCard(newIndex, data);
         elContainerAnak.appendChild(card);
         updateCardNumbers();
-
-        // Jika data punya pejantan, auto-select pejantan form
-        if (data.pejantan_id && elPejantan && !elPejantan.value) {
-            elPejantan.value = data.pejantan_id;
-        }
 
         card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -476,6 +648,9 @@
     if (elContainerAnak.children.length === 0) {
         addAnakItem({});
     }
+
+    // Inisialisasi state awal
+    updatePejantanUtamaState();
 
     // Jika sudah ada induk yang dipilih saat load, trigger refresh
     if (elInduk && elInduk.value) {
