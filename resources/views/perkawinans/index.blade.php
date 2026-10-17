@@ -137,6 +137,21 @@
             @enderror
         </div>
 
+        <!-- Inbreeding Warning Alert Box -->
+        <div id="sheet_inbreeding_box" class="hidden p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 space-y-2 text-xs">
+            <div class="flex items-start gap-2 font-bold">
+                <i class="ti ti-alert-triangle text-base text-rose-600 mt-0.5 shrink-0"></i>
+                <div>
+                    <h5 id="sheet_inbreeding_title" class="font-extrabold text-rose-900 leading-tight">Peringatan Inbreeding (Perkawinan Sedarah)</h5>
+                    <p id="sheet_inbreeding_msg" class="text-[11px] text-rose-700 font-normal mt-0.5 leading-relaxed"></p>
+                </div>
+            </div>
+            <label class="flex items-center gap-2 pt-1 border-t border-rose-200/60 font-semibold cursor-pointer text-[11px] text-rose-900 select-none">
+                <input type="checkbox" name="abaikan_inbreeding" value="1" id="sheet_abaikan_inbreeding" class="rounded text-rose-600 focus:ring-rose-500">
+                <span>Saya memahami risiko inbreeding dan tetap ingin melanjutkan</span>
+            </label>
+        </div>
+
         <!-- Tanggal Kawin & Status -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -192,6 +207,51 @@
         </div>
     </form>
 </x-bottom-sheet>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const pejantanSel = document.getElementById('sheet_pejantan_id');
+        const betinaSel = document.getElementById('sheet_betina_id');
+        const warningBox = document.getElementById('sheet_inbreeding_box');
+        const titleEl = document.getElementById('sheet_inbreeding_title');
+        const msgEl = document.getElementById('sheet_inbreeding_msg');
+        const checkboxEl = document.getElementById('sheet_abaikan_inbreeding');
+
+        async function verifyInbreeding() {
+            const pId = pejantanSel ? pejantanSel.value : '';
+            const bId = betinaSel ? betinaSel.value : '';
+
+            if (!pId || !bId || pId === bId) {
+                if (warningBox) warningBox.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const res = await fetch(`{{ route('perkawinans.check-inbreeding') }}?betina_id=${bId}&pejantan_id=${pId}`);
+                const data = await res.json();
+
+                if (data.is_inbreeding && data.detail) {
+                    titleEl.textContent = data.detail.title || 'Peringatan Inbreeding';
+                    msgEl.textContent = data.detail.message || 'Kedua kambing memiliki hubungan darah.';
+                    warningBox.classList.remove('hidden');
+                } else {
+                    warningBox.classList.add('hidden');
+                    if (checkboxEl) checkboxEl.checked = false;
+                }
+            } catch (err) {
+                console.error('Failed to check inbreeding', err);
+            }
+        }
+
+        if (pejantanSel) pejantanSel.addEventListener('change', verifyInbreeding);
+        if (betinaSel) betinaSel.addEventListener('change', verifyInbreeding);
+
+        // Initial check if values are pre-selected
+        if (pejantanSel && betinaSel && pejantanSel.value && betinaSel.value) {
+            verifyInbreeding();
+        }
+    });
+</script>
 
 @if(request('action') === 'create' || ($errors->any() && !old('_method')))
 <script>

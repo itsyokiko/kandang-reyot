@@ -298,39 +298,51 @@
         @endif
     </x-section-card>
 
-    <!-- 6. Riwayat Perawatan -->
+    <!-- 6. Riwayat & Jadwal Perawatan -->
     <x-section-card
-        title="Riwayat Perawatan"
+        title="Perawatan & Rekam Jejak"
         icon="ti ti-pill"
-        actionText="+ Pengingat"
+        actionText="+ Catat / Jadwal"
         :actionHref="route('pengingat-perawatan.create', ['kambing_id' => $kambing->id])"
     >
         @if ($kambing->pengingatPerawatan->isEmpty())
-            <p class="text-xs text-slate-500 italic py-1">Belum ada riwayat perawatan.</p>
+            <p class="text-xs text-slate-500 italic py-1">Belum ada rekam jejak atau jadwal perawatan.</p>
         @else
             <div class="space-y-2.5">
-                @foreach ($kambing->pengingatPerawatan as $p)
-                    <div class="p-3 border border-slate-200 rounded-xl bg-slate-50/50 flex items-center justify-between gap-2">
-                        <div>
-                            <div class="text-xs font-bold text-slate-900">
-                                {{ $p->jenis_perawatan }}
-                            </div>
-                            <div class="text-[11px] text-slate-500 mt-0.5">
-                                Jadwal: {{ $p->tanggal ? $p->tanggal->format('d M Y') : '-' }}
-                            </div>
-                            <div class="mt-1">
+                @foreach ($kambing->pengingatPerawatan->sortByDesc('tanggal') as $p)
+                    <div class="p-3 border border-slate-200 rounded-xl bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-900">{{ $p->jenis_perawatan }}</span>
                                 <x-status-badge :status="$p->status" />
                             </div>
+                            <div class="text-[11px] text-slate-500">
+                                @if($p->status === 'sudah_diberikan')
+                                    <span>Selesai: <strong>{{ $p->tanggal_pemberian ? $p->tanggal_pemberian->format('d M Y') : ($p->tanggal ? $p->tanggal->format('d M Y') : '-') }}</strong></span>
+                                @else
+                                    <span>Jadwal: <strong>{{ $p->tanggal ? $p->tanggal->format('d M Y') : '-' }}</strong></span>
+                                @endif
+                                @if($p->dosis)
+                                    <span> • Dosis: {{ $p->dosis }}</span>
+                                @endif
+                            </div>
+                            @if ($p->keterangan)
+                                <p class="text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-100">
+                                    {{ $p->keterangan }}
+                                </p>
+                            @endif
                         </div>
 
                         @if ($p->status === 'belum_diberikan')
-                            <form action="{{ route('pengingat-perawatan.selesai', $p) }}" method="POST">
-                                @csrf
-                                <input type="hidden" name="tanggal_pemberian" value="{{ date('Y-m-d') }}">
-                                <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-300 text-xs font-semibold hover:bg-emerald-100 transition">
-                                    ✓ Sudah
-                                </button>
-                            </form>
+                            <div class="shrink-0 flex items-center gap-2">
+                                <form action="{{ route('pengingat-perawatan.selesai', $p) }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="tanggal_pemberian" value="{{ date('Y-m-d') }}">
+                                    <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 active:scale-95 transition shadow-xs">
+                                        ✓ Sudah Diberikan
+                                    </button>
+                                </form>
+                            </div>
                         @endif
                     </div>
                 @endforeach
@@ -420,15 +432,26 @@
             <label for="edit_foto" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Ganti Foto
             </label>
+            <div id="container-preview-show-edit" class="hidden mb-2">
+                <div class="relative inline-block w-20 h-20 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-sm bg-slate-50">
+                    <img id="preview-foto-show-edit" src="" alt="Preview Foto Baru" class="w-full h-full object-cover">
+                    <button type="button" onclick="clearFotoUpload('edit_foto', 'container-preview-show-edit', 'preview-foto-show-edit')"
+                            class="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        <i class="ti ti-x text-[10px]"></i>
+                    </button>
+                </div>
+            </div>
             @if ($kambing->foto)
                 <div class="flex items-center gap-2 mb-2">
                     <img src="{{ asset('storage/' . $kambing->foto) }}" alt="Foto saat ini" class="w-10 h-10 object-cover rounded-lg border border-slate-200">
-                    <span class="text-[11px] text-slate-500">Foto terpasang saat ini</span>
+                    <span class="text-[11px] text-slate-500">Foto saat ini. Pilih file baru jika ingin mengganti.</span>
                 </div>
             @endif
             <input type="file" name="foto" id="edit_foto" accept="image/*"
+                data-preview="#preview-foto-show-edit"
+                data-preview-container="#container-preview-show-edit"
                 class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
-            <p class="text-[11px] text-slate-400 mt-1">Kosongkan jika tidak ingin mengubah foto.</p>
+            <p class="text-[11px] text-slate-400 mt-1">Format: JPG, PNG, WEBP, HEIC (Maksimal 15MB. Otomatis dioptimalkan).</p>
             @error('foto')
                 <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
             @enderror

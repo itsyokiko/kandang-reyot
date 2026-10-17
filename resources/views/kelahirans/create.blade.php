@@ -167,6 +167,32 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                                            Tanggal Lahir
+                                        </label>
+                                        <input type="date" name="anak[{{ $index }}][tanggal_lahir]" value="{{ $item['tanggal_lahir'] ?? '' }}"
+                                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                        <span class="text-[10px] text-slate-400">Ikuti tanggal kelahiran jika kosong</span>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                                            Bapak / Pejantan
+                                        </label>
+                                        <select name="anak[{{ $index }}][pejantan_id]"
+                                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                            <option value="">-- Ikuti Pejantan di Atas --</option>
+                                            @foreach ($pejantans as $p)
+                                                <option value="{{ $p->id }}" {{ ($item['pejantan_id'] ?? '') == $p->id ? 'selected' : '' }}>
+                                                    ♂ {{ $p->nama }} {{ $p->ras ? "($p->ras)" : '' }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                                             Ras (Opsional)
                                         </label>
                                         <input type="text" name="anak[{{ $index }}][ras]" value="{{ $item['ras'] ?? '' }}"

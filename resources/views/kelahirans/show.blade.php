@@ -114,8 +114,11 @@
                                         <span class="font-semibold {{ $anak->jenis_kelamin === 'jantan' ? 'text-blue-600' : 'text-pink-600' }}">
                                             {{ $anak->jenis_kelamin === 'jantan' ? '♂ Jantan' : '♀ Betina' }}
                                         </span>
-                                        @if ($anak->ras)
-                                            <span class="text-slate-400">• {{ $anak->ras }}</span>
+                                        @if ($anak->tanggal_lahir)
+                                            <span class="text-slate-400">• Lahir: {{ $anak->tanggal_lahir->format('d/m/Y') }}</span>
+                                        @endif
+                                        @if ($anak->pejantan)
+                                            <span class="text-slate-500">• Bapak: {{ $anak->pejantan->nama }}</span>
                                         @endif
                                     </div>
                                 </div>

@@ -4,20 +4,39 @@ namespace App\Http\Controllers;
 
 use App\Models\Kambing;
 use App\Models\PengingatPerawatan;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class PengingatPerawatanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $pengingatPerawatans = PengingatPerawatan::with('kambing')
-            ->orderByRaw("CASE WHEN status = 'belum_diberikan' THEN 0 ELSE 1 END")
-            ->latest('tanggal')
-            ->paginate(15);
+        $tab = $request->query('tab', 'jadwal'); // 'jadwal' (akan datang) atau 'riwayat' (sudah dilakukan)
+
+        $query = PengingatPerawatan::with('kambing');
+
+        if ($tab === 'riwayat') {
+            $query->where('status', 'sudah_diberikan')->latest('tanggal_pemberian');
+        } else {
+            $query->where('status', 'belum_diberikan')->orderBy('tanggal', 'asc');
+        }
+
+        if ($request->filled('kambing_id')) {
+            $query->where('kambing_id', $request->input('kambing_id'));
+        }
+
+        if ($request->filled('jenis_perawatan')) {
+            $query->where('jenis_perawatan', $request->input('jenis_perawatan'));
+        }
+
+        $pengingatPerawatans = $query->paginate(15)->withQueryString();
 
         $kambings = Kambing::where('status', '!=', 'mati')->orderBy('nama')->get();
 
-        return view('pengingat_perawatan.index', compact('pengingatPerawatans', 'kambings'));
+        $countJadwal = PengingatPerawatan::where('status', 'belum_diberikan')->count();
+        $countRiwayat = PengingatPerawatan::where('status', 'sudah_diberikan')->count();
+
+        return view('pengingat_perawatan.index', compact('pengingatPerawatans', 'kambings', 'tab', 'countJadwal', 'countRiwayat'));
     }
 
     public function create()
@@ -30,6 +49,53 @@ class PengingatPerawatanController extends Controller
 
     public function store(Request $request)
     {
+        $isRiwayat = $request->input('tipe_input') === 'riwayat';
+
+        if ($isRiwayat) {
+            $validated = $request->validate([
+                'kambing_id' => 'required|exists:kambings,id',
+                'jenis_perawatan' => 'required|string|max:255',
+                'tanggal_pemberian' => 'required|date',
+                'catatan' => 'nullable|string',
+                'ulang_hari' => 'nullable|integer|min:1',
+                'tanggal_berikutnya' => 'nullable|date',
+            ], [
+                'kambing_id.required' => 'Kambing wajib dipilih.',
+                'jenis_perawatan.required' => 'Jenis perawatan wajib diisi.',
+                'tanggal_pemberian.required' => 'Tanggal pelaksanaan perawatan wajib diisi.',
+            ]);
+
+            PengingatPerawatan::create([
+                'kambing_id' => $validated['kambing_id'],
+                'jenis_perawatan' => $validated['jenis_perawatan'],
+                'tanggal' => $validated['tanggal_pemberian'],
+                'tanggal_pemberian' => $validated['tanggal_pemberian'],
+                'status' => 'sudah_diberikan',
+                'catatan' => $validated['catatan'] ?? null,
+            ]);
+
+            $nextDate = null;
+            if (!empty($validated['tanggal_berikutnya'])) {
+                $nextDate = $validated['tanggal_berikutnya'];
+            } elseif (!empty($validated['ulang_hari'])) {
+                $nextDate = Carbon::parse($validated['tanggal_pemberian'])->addDays((int) $validated['ulang_hari'])->toDateString();
+            }
+
+            if ($nextDate) {
+                PengingatPerawatan::create([
+                    'kambing_id' => $validated['kambing_id'],
+                    'jenis_perawatan' => $validated['jenis_perawatan'],
+                    'tanggal' => $nextDate,
+                    'status' => 'belum_diberikan',
+                    'catatan' => 'Jadwal berkala lanjutan dari tanggal ' . Carbon::parse($validated['tanggal_pemberian'])->format('d/m/Y'),
+                ]);
+            }
+
+            return redirect()->route('pengingat-perawatan.index', ['tab' => 'riwayat'])
+                ->with('success', 'Riwayat perawatan berhasil dicatat' . ($nextDate ? ' dan jadwal berikutnya otomatis dibuat.' : '.'));
+        }
+
+        // Mode Jadwal Biasa
         $validated = $request->validate([
             'kambing_id' => 'required|exists:kambings,id',
             'jenis_perawatan' => 'required|string|max:255',
@@ -53,12 +119,10 @@ class PengingatPerawatanController extends Controller
 
     public function selesai(Request $request, PengingatPerawatan $pengingatPerawatan)
     {
-        $tanggalJadwalStr = $pengingatPerawatan->tanggal ? $pengingatPerawatan->tanggal->format('Y-m-d') : '';
-
         $validated = $request->validate([
-            'tanggal_pemberian' => 'nullable|date|after_or_equal:' . $tanggalJadwalStr,
-        ], [
-            'tanggal_pemberian.after_or_equal' => 'Tanggal pemberian tidak boleh sebelum tanggal jadwal perawatan.',
+            'tanggal_pemberian' => 'nullable|date',
+            'ulang_hari' => 'nullable|integer|min:1',
+            'tanggal_berikutnya' => 'nullable|date',
         ]);
 
         $tanggalPemberian = $validated['tanggal_pemberian'] ?? now()->toDateString();
@@ -68,21 +132,28 @@ class PengingatPerawatanController extends Controller
             'tanggal_pemberian' => $tanggalPemberian,
         ]);
 
-        if (trim(strtolower($pengingatPerawatan->jenis_perawatan)) === 'semprot kandang') {
+        $nextDate = null;
+        if (!empty($validated['tanggal_berikutnya'])) {
+            $nextDate = $validated['tanggal_berikutnya'];
+        } elseif (!empty($validated['ulang_hari'])) {
+            $nextDate = Carbon::parse($tanggalPemberian)->addDays((int) $validated['ulang_hari'])->toDateString();
+        } elseif (trim(strtolower($pengingatPerawatan->jenis_perawatan)) === 'semprot kandang') {
             $interval = (int) config('kandang.interval_semprot_kandang_hari', 14);
-            $nextDate = \Carbon\Carbon::parse($tanggalPemberian)->startOfDay()->addDays($interval)->toDateString();
+            $nextDate = Carbon::parse($tanggalPemberian)->startOfDay()->addDays($interval)->toDateString();
+        }
 
+        if ($nextDate) {
             PengingatPerawatan::create([
                 'kambing_id' => $pengingatPerawatan->kambing_id,
-                'jenis_perawatan' => 'Semprot Kandang',
+                'jenis_perawatan' => $pengingatPerawatan->jenis_perawatan,
                 'tanggal' => $nextDate,
                 'status' => 'belum_diberikan',
-                'catatan' => 'Jadwal otomatis berikutnya (interval ' . $interval . ' hari)',
+                'catatan' => 'Jadwal otomatis berikutnya lanjutan tanggal ' . Carbon::parse($tanggalPemberian)->format('d/m/Y'),
             ]);
         }
 
         return redirect()->back()
-            ->with('success', 'Pengingat perawatan berhasil dikonfirmasi sudah diberikan.');
+            ->with('success', 'Pengingat perawatan berhasil dikonfirmasi sudah diberikan' . ($nextDate ? ' dan jadwal berikutnya otomatis dibuat.' : '.'));
     }
 
     public function destroy(PengingatPerawatan $pengingatPerawatan)

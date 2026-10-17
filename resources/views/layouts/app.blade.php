@@ -501,6 +501,89 @@
                 customClass: { popup: 'swal-compact rounded-3xl border border-slate-100 shadow-2xl' }
             });
         @endif
+
+        // Global Auto-Compression & Downscaling for Image Uploads (Camera / Phone Snapshots)
+        document.addEventListener('change', function(e) {
+            const input = e.target;
+            if (input.tagName === 'INPUT' && input.type === 'file' && input.accept && input.accept.includes('image')) {
+                const file = input.files && input.files[0];
+                if (!file || !file.type.startsWith('image/')) return;
+                if (file.type === 'image/gif' || file.type === 'image/svg+xml') return;
+
+                const previewTarget = input.dataset.preview ? document.querySelector(input.dataset.preview) : null;
+                const containerTarget = input.dataset.previewContainer ? document.querySelector(input.dataset.previewContainer) : null;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    if (previewTarget) {
+                        previewTarget.src = event.target.result;
+                        if (containerTarget) containerTarget.classList.remove('hidden');
+                    }
+
+                    const img = new Image();
+                    img.onload = function() {
+                        const maxDim = 1600;
+                        let w = img.width;
+                        let h = img.height;
+
+                        // Only compress/resize if large (exceeds maxDim or over 600KB)
+                        if (w > maxDim || h > maxDim || file.size > 600 * 1024) {
+                            if (w > h) {
+                                if (w > maxDim) {
+                                    h = Math.round((h * maxDim) / w);
+                                    w = maxDim;
+                                }
+                            } else {
+                                if (h > maxDim) {
+                                    w = Math.round((w * maxDim) / h);
+                                    h = maxDim;
+                                }
+                            }
+
+                            const canvas = document.createElement('canvas');
+                            canvas.width = w;
+                            canvas.height = h;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, w, h);
+
+                            canvas.toBlob(function(blob) {
+                                if (blob && window.DataTransfer) {
+                                    try {
+                                        const cleanName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                                        const optimizedFile = new File([blob], cleanName, {
+                                            type: 'image/jpeg',
+                                            lastModified: Date.now()
+                                        });
+                                        const dt = new DataTransfer();
+                                        dt.items.add(optimizedFile);
+                                        input.files = dt.files;
+
+                                        // Update preview if available
+                                        if (previewTarget) {
+                                            previewTarget.src = URL.createObjectURL(blob);
+                                        }
+                                    } catch (err) {
+                                        console.warn('DataTransfer unavailable:', err);
+                                    }
+                                }
+                            }, 'image/jpeg', 0.85);
+                        }
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Global Helper to reset file input & hide preview
+        window.clearFotoUpload = function(inputId, containerId, previewId) {
+            const input = document.getElementById(inputId);
+            if (input) input.value = '';
+            const container = document.getElementById(containerId);
+            if (container) container.classList.add('hidden');
+            const preview = document.getElementById(previewId);
+            if (preview) preview.src = '';
+        };
     </script>
 </body>
 </html>

@@ -210,14 +210,15 @@
                             Hapus
                         </button>
                     </div>
+                    <!-- Row 1: Nama & Kelamin -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Anak *</label>
-                            <input type="text" name="anak[0][nama]" required placeholder="Nama cempe"
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Anak <span class="text-rose-500">*</span></label>
+                            <input type="text" name="anak[0][nama]" required placeholder="Contoh: Cempe 01"
                                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Kelamin *</label>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Jenis Kelamin <span class="text-rose-500">*</span></label>
                             <select name="anak[0][jenis_kelamin]" required
                                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500">
                                 <option value="jantan">♂ Jantan</option>
@@ -225,6 +226,26 @@
                             </select>
                         </div>
                     </div>
+                    <!-- Row 2: Tanggal Lahir & Bapak (Pejantan) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Lahir</label>
+                            <input type="date" name="anak[0][tanggal_lahir]"
+                                   class="input-tgl-anak w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500">
+                            <span class="text-[10px] text-slate-400">Otomatis ikuti tanggal kelahiran jika kosong</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Bapak / Pejantan</label>
+                            <select name="anak[0][pejantan_id]"
+                                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500">
+                                <option value="">-- Ikuti Pejantan di Atas --</option>
+                                @foreach ($pejantans as $p)
+                                    <option value="{{ $p->id }}">♂ {{ $p->nama }} {{ $p->ras ? "($p->ras)" : '' }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Row 3: Ras & Catatan -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
                             <label class="block text-[11px] font-bold text-slate-600 mb-1">Ras (Opsional)</label>
@@ -233,7 +254,7 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-600 mb-1">Catatan</label>
-                            <input type="text" name="anak[0][catatan]" placeholder="Ciri, berat lahir, dll"
+                            <input type="text" name="anak[0][catatan]" placeholder="Ciri, bobot lahir, dll"
                                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500">
                         </div>
                     </div>

@@ -70,7 +70,10 @@ class KambingController extends Controller
             'tanggal_lahir' => ['nullable', 'date'],
             'status' => ['required', 'in:hidup,mati,dijual'],
             'catatan' => ['nullable', 'string'],
-            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,heic,heif', 'max:15360'],
+        ], [
+            'foto.max' => 'Ukuran foto terlalu besar (maksimal 15MB).',
+            'foto.image' => 'File yang diunggah harus berupa gambar (JPG, PNG, WEBP).',
         ]);
 
         if ($request->hasFile('foto')) {
@@ -109,7 +112,10 @@ class KambingController extends Controller
             'tanggal_lahir' => ['nullable', 'date'],
             'status' => ['required', 'in:hidup,mati,dijual'],
             'catatan' => ['nullable', 'string'],
-            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,heic,heif', 'max:15360'],
+        ], [
+            'foto.max' => 'Ukuran foto terlalu besar (maksimal 15MB).',
+            'foto.image' => 'File yang diunggah harus berupa gambar (JPG, PNG, WEBP).',
         ]);
 
         $validator->after(function ($validator) use ($request, $kambing) {

@@ -12,10 +12,25 @@
 
     <!-- Search & Filter Card -->
     <x-section-card>
-        <form action="{{ route('kambings.index') }}" method="GET" class="space-y-3">
-            <!-- Search always visible -->
-            <div class="relative">
-                <x-search-bar name="search" :value="request('search')" placeholder="Cari nama kambing..." />
+        <form id="filterKambingForm" action="{{ route('kambings.index') }}" method="GET" class="space-y-3">
+            <!-- Search always visible with Realtime live feedback -->
+            <div class="relative flex items-center">
+                <span id="searchIcon" class="absolute left-3.5 text-slate-400 pointer-events-none text-base transition-transform">
+                    <i class="ti ti-search"></i>
+                </span>
+                <input type="search"
+                       name="search"
+                       id="kambingSearchInput"
+                       value="{{ request('search') }}"
+                       placeholder="Cari kambing (nama, ras)..."
+                       autocomplete="off"
+                       class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white shadow-2xs transition">
+                <button type="button"
+                        id="searchClearBtn"
+                        class="{{ request()->filled('search') ? '' : 'hidden' }} absolute right-3 p-1 rounded-lg text-slate-400 hover:text-slate-600 active:scale-95"
+                        aria-label="Bersihkan pencarian">
+                    <i class="ti ti-x text-sm"></i>
+                </button>
             </div>
 
             <!-- Filter: collapsed by default, opens on tap -->
@@ -107,99 +122,101 @@
 
 
     <!-- Total items info -->
-    <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+    <div id="kambingTotalCount" class="flex items-center justify-between text-xs text-slate-500 px-1">
         <span>Menampilkan <strong>{{ $kambings->total() }}</strong> kambing</span>
     </div>
 
     <!-- Kambing Cards List -->
-    @if ($kambings->isEmpty())
-        <x-empty-state
-            title="Tidak ada kambing yang sesuai"
-            description="Coba ubah kata kunci pencarian atau sesuaikan filter Anda."
-            icon="ti ti-search"
-            actionText="Reset Filter"
-            actionHref="{{ route('kambings.index') }}"
-        />
-    @else
-        <div class="space-y-3">
-            @foreach ($kambings as $kambing)
-                <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs hover:border-emerald-300 transition-all flex flex-col gap-3">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex items-center gap-3">
-                            <!-- Avatar / Foto -->
-                            <div class="w-12 h-12 rounded-2xl bg-emerald-50 border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center text-xl text-emerald-600 shadow-2xs">
-                                @if ($kambing->foto)
-                                    <img src="{{ asset('storage/' . $kambing->foto) }}" alt="{{ $kambing->nama }}" class="w-full h-full object-cover">
-                                @else
-                                    <span>🐐</span>
-                                @endif
-                            </div>
-
-                            <!-- Identitas -->
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <a href="{{ route('kambings.show', $kambing) }}" class="font-bold text-slate-900 hover:text-emerald-600 text-sm tracking-tight transition">
-                                        {{ $kambing->nama }}
-                                    </a>
-                                </div>
-
-                                <div class="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                                    <span class="font-semibold {{ $kambing->jenis_kelamin === 'jantan' ? 'text-blue-600' : 'text-pink-600' }}">
-                                        {{ $kambing->jenis_kelamin === 'jantan' ? '♂ Jantan' : '♀ Betina' }}
-                                    </span>
-                                    <span>•</span>
-                                    <span>{{ $kambing->ras ?? 'Biasa' }}</span>
-                                    @if($kambing->tanggal_lahir)
-                                        <span>•</span>
-                                        <span>{{ $kambing->tanggal_lahir->format('d/m/Y') }}</span>
+    <div id="kambingCardsList">
+        @if ($kambings->isEmpty())
+            <x-empty-state
+                title="Tidak ada kambing yang sesuai"
+                description="Coba ubah kata kunci pencarian atau sesuaikan filter Anda."
+                icon="ti ti-search"
+                actionText="Reset Filter"
+                actionHref="{{ route('kambings.index') }}"
+            />
+        @else
+            <div class="space-y-3">
+                @foreach ($kambings as $kambing)
+                    <div data-kambing-card data-nama="{{ strtolower($kambing->nama) }}" data-ras="{{ strtolower($kambing->ras ?? '') }}" class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs hover:border-emerald-300 transition-all flex flex-col gap-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <!-- Avatar / Foto -->
+                                <div class="w-12 h-12 rounded-2xl bg-emerald-50 border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center text-xl text-emerald-600 shadow-2xs">
+                                    @if ($kambing->foto)
+                                        <img src="{{ asset('storage/' . $kambing->foto) }}" alt="{{ $kambing->nama }}" class="w-full h-full object-cover">
+                                    @else
+                                        <span>🐐</span>
                                     @endif
                                 </div>
+
+                                <!-- Identitas -->
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <a href="{{ route('kambings.show', $kambing) }}" class="font-bold text-slate-900 hover:text-emerald-600 text-sm tracking-tight transition">
+                                            {{ $kambing->nama }}
+                                        </a>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                                        <span class="font-semibold {{ $kambing->jenis_kelamin === 'jantan' ? 'text-blue-600' : 'text-pink-600' }}">
+                                            {{ $kambing->jenis_kelamin === 'jantan' ? '♂ Jantan' : '♀ Betina' }}
+                                        </span>
+                                        <span>•</span>
+                                        <span>{{ $kambing->ras ?? 'Biasa' }}</span>
+                                        @if($kambing->tanggal_lahir)
+                                            <span>•</span>
+                                            <span>{{ $kambing->tanggal_lahir->format('d/m/Y') }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status Badge -->
+                            <x-status-badge :status="$kambing->status" />
+                        </div>
+
+                        @if ($kambing->catatan)
+                            <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 line-clamp-2">
+                                {{ $kambing->catatan }}
+                            </p>
+                        @endif
+
+                        <!-- Card Footer Actions -->
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs font-semibold">
+                            <a href="{{ route('silsilah.index', $kambing) }}" class="text-indigo-600 hover:text-indigo-700 flex items-center gap-1 min-h-[36px] items-center">
+                                <i class="ti ti-git-fork"></i>
+                                <span>Silsilah</span>
+                            </a>
+
+                            <div class="flex items-center gap-3">
+                                <a href="{{ route('kambings.show', $kambing) }}" class="text-emerald-600 hover:text-emerald-700 p-1">
+                                    Detail
+                                </a>
+                                <a href="{{ route('kambings.edit', $kambing) }}" class="text-amber-600 hover:text-amber-700 p-1">
+                                    Edit
+                                </a>
+                                <form action="{{ route('kambings.destroy', $kambing) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, this, 'Hapus Kambing?', 'Apakah Anda yakin ingin menghapus data kambing {{ $kambing->nama }}?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-rose-600 hover:text-rose-700 p-1">
+                                        Hapus
+                                    </button>
+                                </form>
                             </div>
                         </div>
-
-                        <!-- Status Badge -->
-                        <x-status-badge :status="$kambing->status" />
                     </div>
-
-                    @if ($kambing->catatan)
-                        <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 line-clamp-2">
-                            {{ $kambing->catatan }}
-                        </p>
-                    @endif
-
-                    <!-- Card Footer Actions -->
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs font-semibold">
-                        <a href="{{ route('silsilah.index', $kambing) }}" class="text-indigo-600 hover:text-indigo-700 flex items-center gap-1 min-h-[36px] items-center">
-                            <i class="ti ti-git-fork"></i>
-                            <span>Silsilah</span>
-                        </a>
-
-                        <div class="flex items-center gap-3">
-                            <a href="{{ route('kambings.show', $kambing) }}" class="text-emerald-600 hover:text-emerald-700 p-1">
-                                Detail
-                            </a>
-                            <a href="{{ route('kambings.edit', $kambing) }}" class="text-amber-600 hover:text-amber-700 p-1">
-                                Edit
-                            </a>
-                            <form action="{{ route('kambings.destroy', $kambing) }}" method="POST" class="inline" onsubmit="return confirmDelete(event, this, 'Hapus Kambing?', 'Apakah Anda yakin ingin menghapus data kambing {{ $kambing->nama }}?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-rose-600 hover:text-rose-700 p-1">
-                                    Hapus
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-
-        @if ($kambings->hasPages())
-            <div class="pt-2">
-                {{ $kambings->links() }}
+                @endforeach
             </div>
+
+            @if ($kambings->hasPages())
+                <div class="pt-2">
+                    {{ $kambings->links() }}
+                </div>
+            @endif
         @endif
-    @endif
+    </div>
 </div>
 
 {{-- FAB: Tambah Kambing --}}
@@ -294,9 +311,20 @@
             <label for="sheet_foto" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Foto Kambing
             </label>
+            <div id="container-preview-sheet" class="hidden mb-2">
+                <div class="relative inline-block w-20 h-20 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-sm bg-slate-50">
+                    <img id="preview-foto-sheet" src="" alt="Preview Foto" class="w-full h-full object-cover">
+                    <button type="button" onclick="clearFotoUpload('sheet_foto', 'container-preview-sheet', 'preview-foto-sheet')"
+                            class="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        <i class="ti ti-x text-[10px]"></i>
+                    </button>
+                </div>
+            </div>
             <input type="file" name="foto" id="sheet_foto" accept="image/*"
+                data-preview="#preview-foto-sheet"
+                data-preview-container="#container-preview-sheet"
                 class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
-            <p class="text-[11px] text-slate-400 mt-1">Format: JPG, PNG, WEBP (Maksimal 2MB).</p>
+            <p class="text-[11px] text-slate-400 mt-1">Format: JPG, PNG, WEBP, HEIC (Maksimal 15MB. Otomatis dioptimalkan).</p>
             @error('foto')
                 <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
             @enderror
@@ -328,6 +356,95 @@
         </div>
     </form>
 </x-bottom-sheet>
+
+<script>
+    (function() {
+        const searchInput = document.getElementById('kambingSearchInput');
+        const clearBtn = document.getElementById('searchClearBtn');
+        const filterForm = document.getElementById('filterKambingForm');
+        const searchIcon = document.getElementById('searchIcon');
+        let searchTimeout = null;
+
+        if (!searchInput) return;
+
+        // Instant local DOM filtering + debounced server fetch
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+
+            // Toggle clear button
+            if (clearBtn) {
+                clearBtn.classList.toggle('hidden', query.length === 0);
+            }
+
+            // 1. Instant local filter on visible cards
+            const cards = document.querySelectorAll('[data-kambing-card]');
+            cards.forEach(card => {
+                const nama = card.dataset.nama || '';
+                const ras = card.dataset.ras || '';
+                if (!query || nama.includes(query) || ras.includes(query)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // 2. Debounced server fetch for complete database search & pagination sync
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(performLiveSearch, 280);
+        });
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+                searchInput.focus();
+            });
+        }
+
+        function performLiveSearch() {
+            if (!filterForm) return;
+
+            const formData = new FormData(filterForm);
+            const params = new URLSearchParams(formData);
+            const fetchUrl = filterForm.action + '?' + params.toString();
+
+            if (searchIcon) {
+                searchIcon.innerHTML = '<i class="ti ti-loader-2 animate-spin text-emerald-600"></i>';
+            }
+
+            fetch(fetchUrl, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                const newTotal = doc.getElementById('kambingTotalCount');
+                const oldTotal = document.getElementById('kambingTotalCount');
+                if (newTotal && oldTotal) {
+                    oldTotal.innerHTML = newTotal.innerHTML;
+                }
+
+                const newCards = doc.getElementById('kambingCardsList');
+                const oldCards = document.getElementById('kambingCardsList');
+                if (newCards && oldCards) {
+                    oldCards.innerHTML = newCards.innerHTML;
+                }
+
+                window.history.replaceState(null, '', fetchUrl);
+            })
+            .catch(err => {
+                console.error('Realtime search error:', err);
+            })
+            .finally(() => {
+                if (searchIcon) {
+                    searchIcon.innerHTML = '<i class="ti ti-search"></i>';
+                }
+            });
+        }
+    })();
+</script>
 
 @if(request('action') === 'create' || ($errors->any() && !old('_method')))
 <script>

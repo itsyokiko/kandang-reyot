@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/semprot-kandang', [SemprotKandangController::class, 'store'])->name('semprot-kandang.store');
 
     Route::resource('kambings', KambingController::class);
+    Route::get('perkawinans/check-inbreeding', [PerkawinanController::class, 'checkInbreeding'])->name('perkawinans.check-inbreeding');
     Route::resource('perkawinans', PerkawinanController::class);
     Route::resource('kelahirans', KelahiranController::class);
 

@@ -8,6 +8,7 @@ use App\Models\Perkawinan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class KelahiranController extends Controller
 {
@@ -80,10 +81,17 @@ class KelahiranController extends Controller
             'tanggal_kelahiran' => ['required', 'date'],
             'catatan' => ['nullable', 'string'],
             'anak' => ['required', 'array', 'min:1'],
-            'anak.*.nama' => ['required', 'string', 'max:255'],
+            'anak.*.nama' => ['required', 'string', 'max:255', 'distinct', Rule::unique('kambings', 'nama')],
             'anak.*.jenis_kelamin' => ['required', 'in:jantan,betina'],
+            'anak.*.tanggal_lahir' => ['nullable', 'date'],
+            'anak.*.pejantan_id' => ['nullable', 'exists:kambings,id'],
             'anak.*.ras' => ['nullable', 'string', 'max:255'],
             'anak.*.catatan' => ['nullable', 'string'],
+        ], [
+            'anak.*.nama.required' => 'Nama anak kambing wajib diisi.',
+            'anak.*.nama.distinct' => 'Nama anak tidak boleh sama dalam satu peristiwa kelahiran.',
+            'anak.*.nama.unique' => 'Nama kambing ":input" sudah digunakan. Gunakan nama yang berbeda.',
+            'anak.*.jenis_kelamin.required' => 'Jenis kelamin anak kambing wajib dipilih.',
         ]);
 
         $validator->after(function ($validator) use ($request) {
@@ -93,18 +101,6 @@ class KelahiranController extends Controller
                     if ($perkawinan->betina_id != $request->input('induk_id') || $perkawinan->pejantan_id != $request->input('pejantan_id')) {
                         $validator->errors()->add('perkawinan_id', 'Pasangan perkawinan yang dipilih tidak sesuai dengan induk dan pejantan yang dipilih.');
                     }
-                }
-            }
-
-            $anaks = $request->input('anak', []);
-            $names = [];
-            foreach ($anaks as $idx => $anak) {
-                $name = isset($anak['nama']) ? trim(mb_strtolower($anak['nama'])) : '';
-                if ($name !== '') {
-                    if (in_array($name, $names, true)) {
-                        $validator->errors()->add("anak.{$idx}.nama", 'Nama anak tidak boleh sama dalam satu peristiwa kelahiran.');
-                    }
-                    $names[] = $name;
                 }
             }
         });
@@ -123,16 +119,19 @@ class KelahiranController extends Controller
             $induk = Kambing::find($validated['induk_id']);
 
             foreach ($validated['anak'] as $childData) {
+                $tglLahir = !empty($childData['tanggal_lahir']) ? $childData['tanggal_lahir'] : $validated['tanggal_kelahiran'];
+                $pejantanId = !empty($childData['pejantan_id']) ? $childData['pejantan_id'] : $validated['pejantan_id'];
+
                 Kambing::create([
                     'nama' => $childData['nama'],
                     'jenis_kelamin' => $childData['jenis_kelamin'],
                     'ras' => !empty($childData['ras']) ? $childData['ras'] : ($induk ? $induk->ras : null),
-                    'tanggal_lahir' => $validated['tanggal_kelahiran'],
+                    'tanggal_lahir' => $tglLahir,
                     'status' => 'hidup',
                     'catatan' => $childData['catatan'] ?? null,
                     'kelahiran_id' => $kelahiran->id,
                     'induk_id' => $validated['induk_id'],
-                    'pejantan_id' => $validated['pejantan_id'],
+                    'pejantan_id' => $pejantanId,
                 ]);
             }
 

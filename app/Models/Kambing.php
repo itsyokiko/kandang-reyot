@@ -147,4 +147,99 @@ class Kambing extends Model
             'sisa_hari' => (int) $today->diffInDays($tanggalMulaiSiap),
         ];
     }
+
+    /**
+     * Memeriksa apakah terjadi perkawinan sedarah (inbreeding) antara betina dan pejantan.
+     *
+     * @param int|Kambing|null $betina
+     * @param int|Kambing|null $pejantan
+     * @return array|null Null jika aman, array dengan detail peringatan jika terdeteksi inbreeding.
+     */
+    public static function checkInbreeding($betina, $pejantan): ?array
+    {
+        $betina = $betina instanceof Kambing ? $betina : Kambing::find($betina);
+        $pejantan = $pejantan instanceof Kambing ? $pejantan : Kambing::find($pejantan);
+
+        if (!$betina || !$pejantan) {
+            return null;
+        }
+
+        // 1. Hubungan Induk & Anak: Pejantan adalah anak dari Betina
+        if ($pejantan->induk_id && $pejantan->induk_id == $betina->id) {
+            return [
+                'is_inbreeding' => true,
+                'type' => 'anak_induk',
+                'level' => 'bahaya',
+                'title' => 'Perkawinan Sedarah: Induk & Anak Kandung',
+                'message' => "Pejantan '{$pejantan->nama}' merupakan anak kandung dari Betina '{$betina->nama}'. Perkawinan ini berisiko tinggi cacat genetik.",
+            ];
+        }
+
+        // 2. Hubungan Anak & Pejantan: Betina adalah anak dari Pejantan
+        if ($betina->pejantan_id && $betina->pejantan_id == $pejantan->id) {
+            return [
+                'is_inbreeding' => true,
+                'type' => 'anak_pejantan',
+                'level' => 'bahaya',
+                'title' => 'Perkawinan Sedarah: Bapak & Anak Kandung',
+                'message' => "Betina '{$betina->nama}' merupakan anak kandung dari Pejantan '{$pejantan->nama}'. Perkawinan ini berisiko tinggi cacat genetik.",
+            ];
+        }
+
+        // 3. Saudara Kandung (Induk & Pejantan sama)
+        if (
+            $betina->induk_id && $pejantan->induk_id && $betina->induk_id == $pejantan->induk_id &&
+            $betina->pejantan_id && $pejantan->pejantan_id && $betina->pejantan_id == $pejantan->pejantan_id
+        ) {
+            return [
+                'is_inbreeding' => true,
+                'type' => 'saudara_kandung',
+                'level' => 'bahaya',
+                'title' => 'Perkawinan Sedarah: Saudara Kandung',
+                'message' => "'{$betina->nama}' dan '{$pejantan->nama}' memiliki bapak dan induk yang sama persis (saudara kandung).",
+            ];
+        }
+
+        // 4. Saudara Seinduk (Ibu sama)
+        if ($betina->induk_id && $pejantan->induk_id && $betina->induk_id == $pejantan->induk_id) {
+            $indukNama = $betina->relationLoaded('induk') && $betina->induk ? $betina->induk->nama : null;
+            if (!$indukNama) {
+                try {
+                    $indukNama = self::where('id', $betina->induk_id)->value('nama');
+                } catch (\Throwable $e) {
+                    $indukNama = null;
+                }
+            }
+            $indukDesc = $indukNama ? " ({$indukNama})" : "";
+            return [
+                'is_inbreeding' => true,
+                'type' => 'saudara_seinduk',
+                'level' => 'peringatan',
+                'title' => 'Perkawinan Sedarah: Saudara Seinduk',
+                'message' => "'{$betina->nama}' dan '{$pejantan->nama}' berasal dari induk yang sama{$indukDesc}.",
+            ];
+        }
+
+        // 5. Saudara Sebapak (Bapak sama)
+        if ($betina->pejantan_id && $pejantan->pejantan_id && $betina->pejantan_id == $pejantan->pejantan_id) {
+            $pejantanNama = $betina->relationLoaded('pejantan') && $betina->pejantan ? $betina->pejantan->nama : null;
+            if (!$pejantanNama) {
+                try {
+                    $pejantanNama = self::where('id', $betina->pejantan_id)->value('nama');
+                } catch (\Throwable $e) {
+                    $pejantanNama = null;
+                }
+            }
+            $pejantanDesc = $pejantanNama ? " ({$pejantanNama})" : "";
+            return [
+                'is_inbreeding' => true,
+                'type' => 'saudara_sebapak',
+                'level' => 'peringatan',
+                'title' => 'Perkawinan Sedarah: Saudara Sebapak',
+                'message' => "'{$betina->nama}' dan '{$pejantan->nama}' memiliki pejantan (bapak) yang sama{$pejantanDesc}.",
+            ];
+        }
+
+        return null;
+    }
 }
