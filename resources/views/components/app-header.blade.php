@@ -31,16 +31,11 @@
                         <i class="ti ti-user text-lg"></i>
                     </div>
                 @endauth
-            @elseif($showLogo)
-                <a href="{{ route('dashboard') }}" class="w-10 h-10 rounded-xl bg-emerald-600/60 p-1 flex items-center justify-center shadow-inner active:scale-95 transition">
-                    <img src="{{ asset('images/goat_logo.png') }}" alt="Logo" class="w-full h-full object-contain">
-                </a>
             @endif
 
             {{-- Title: only show on dashboard. Other pages have their own h1 in content. --}}
             @if(request()->routeIs('dashboard'))
-                <div class="flex items-center gap-2">
-                    <img src="{{ asset('images/goat_logo.png') }}" alt="Logo" class="w-8 h-8 object-contain rounded-lg">
+                <div>
                     <h1 class="text-base font-bold tracking-tight text-white leading-tight">
                         Kandang Reyot
                     </h1>

@@ -15,7 +15,7 @@
     <link rel="manifest" href="{{ asset('manifest.json') }}">
 
     <!-- [Favicon] -->
-    <link rel="icon" href="{{ asset('assets/dist/assets/images/favicon.svg') }}" type="image/svg+xml">
+    <link rel="icon" href="{{ asset('images/goat_logo.png') }}" type="image/png">
 
     <!-- [Instant Navigation Speculation Rules] -->
     <script type="speculationrules">
@@ -183,8 +183,10 @@
     <!-- Mobile Device Container Wrapper (Centered on Desktop with native card frame) -->
     <div class="w-full max-w-lg mx-auto min-h-screen min-h-[100dvh] bg-slate-50 relative flex flex-col shadow-2xl border-x border-slate-200/60 sm:border-slate-800/40 overflow-x-clip">
 
-        <!-- Top App Header -->
-        <x-app-header :title="View::hasSection('title') ? trim(View::getSection('title')) : 'Kandang Reyot'" />
+        <!-- Top App Header (Hidden on Login) -->
+        @unless(request()->routeIs('login'))
+            <x-app-header :title="View::hasSection('title') ? trim(View::getSection('title')) : 'Kandang Reyot'" />
+        @endunless
 
         <!-- Notification Banner / Flash Messages -->
         @if (session('success'))
@@ -218,7 +220,7 @@
         @endif
 
         <!-- Main Content Area with Seamless Transition & Safe Spacing -->
-        <main class="flex-1 w-full {{ request()->routeIs('dashboard') ? 'px-0 pt-0 pb-24' : 'px-3.5 py-4 pb-24' }} app-screen-content">
+        <main class="flex-1 w-full {{ request()->routeIs('login') ? 'px-6 py-12 flex flex-col justify-center' : (request()->routeIs('dashboard') ? 'px-0 pt-0 pb-24' : 'px-3.5 py-4 pb-24') }} app-screen-content">
             @yield('content')
         </main>
 
