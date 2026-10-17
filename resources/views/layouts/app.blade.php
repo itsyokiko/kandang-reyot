@@ -521,12 +521,22 @@
 
                 const previewTarget = input.dataset.preview ? document.querySelector(input.dataset.preview) : null;
                 const containerTarget = input.dataset.previewContainer ? document.querySelector(input.dataset.previewContainer) : null;
+                const infoTarget = input.dataset.infoTarget ? document.querySelector(input.dataset.infoTarget) : null;
+
+                const formatSize = (bytes) => {
+                    if (bytes < 1024) return bytes + ' B';
+                    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+                };
 
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     if (previewTarget) {
                         previewTarget.src = event.target.result;
                         if (containerTarget) containerTarget.classList.remove('hidden');
+                    }
+                    if (infoTarget) {
+                        infoTarget.textContent = `${formatSize(file.size)}`;
                     }
 
                     const img = new Image();
@@ -567,9 +577,12 @@
                                         dt.items.add(optimizedFile);
                                         input.files = dt.files;
 
-                                        // Update preview if available
+                                        // Update preview & info if available
                                         if (previewTarget) {
                                             previewTarget.src = URL.createObjectURL(blob);
+                                        }
+                                        if (infoTarget) {
+                                            infoTarget.textContent = `${formatSize(blob.size)} (Dioptimalkan)`;
                                         }
                                     } catch (err) {
                                         console.warn('DataTransfer unavailable:', err);
@@ -584,15 +597,55 @@
             }
         });
 
-        // Global Helper to reset file input & hide preview
-        window.clearFotoUpload = function(inputId, containerId, previewId) {
+        // Sync camera input directly to main form input
+        window.handleCameraCapture = function(cameraInput, mainInputId) {
+            if (!cameraInput.files || !cameraInput.files[0]) return;
+            const file = cameraInput.files[0];
+            const mainInput = document.getElementById(mainInputId);
+            if (!mainInput) return;
+
+            if (window.DataTransfer) {
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    mainInput.files = dt.files;
+                    mainInput.dispatchEvent(new Event('change', { bubbles: true }));
+                } catch (e) {
+                    console.warn('DataTransfer failed on camera capture', e);
+                }
+            }
+        };
+
+        // Reset photo upload helper
+        window.clearPhotoUpload = function(inputId, cameraInputId, containerId, previewId) {
             const input = document.getElementById(inputId);
             if (input) input.value = '';
+            if (cameraInputId) {
+                const cameraInput = document.getElementById(cameraInputId);
+                if (cameraInput) cameraInput.value = '';
+            }
             const container = document.getElementById(containerId);
             if (container) container.classList.add('hidden');
             const preview = document.getElementById(previewId);
             if (preview) preview.src = '';
         };
+
+        // Global Helper for backward compatibility
+        window.clearFotoUpload = function(inputId, containerId, previewId) {
+            window.clearPhotoUpload(inputId, null, containerId, previewId);
+        };
+
+        // Auto clear previews on form reset
+        document.addEventListener('reset', function(e) {
+            if (e.target && e.target.querySelectorAll) {
+                e.target.querySelectorAll('.photo-upload-wrapper').forEach(w => {
+                    const id = w.dataset.uploadId;
+                    if (id && window.clearPhotoUpload) {
+                        window.clearPhotoUpload(id, id + '_camera', 'preview_box_' + id, 'preview_img_' + id);
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>

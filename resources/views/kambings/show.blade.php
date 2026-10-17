@@ -429,34 +429,7 @@
         </div>
 
         <!-- Foto -->
-        <div>
-            <label for="edit_foto" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Ganti Foto
-            </label>
-            <div id="container-preview-show-edit" class="hidden mb-2">
-                <div class="relative inline-block w-20 h-20 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-sm bg-slate-50">
-                    <img id="preview-foto-show-edit" src="" alt="Preview Foto Baru" class="w-full h-full object-cover">
-                    <button type="button" onclick="clearFotoUpload('edit_foto', 'container-preview-show-edit', 'preview-foto-show-edit')"
-                            class="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                        <i class="ti ti-x text-[10px]"></i>
-                    </button>
-                </div>
-            </div>
-            @if ($kambing->foto)
-                <div class="flex items-center gap-2 mb-2">
-                    <img src="{{ asset('storage/' . $kambing->foto) }}" alt="Foto saat ini" class="w-10 h-10 object-cover rounded-lg border border-slate-200">
-                    <span class="text-[11px] text-slate-500">Foto saat ini. Pilih file baru jika ingin mengganti.</span>
-                </div>
-            @endif
-            <input type="file" name="foto" id="edit_foto" accept="image/*"
-                data-preview="#preview-foto-show-edit"
-                data-preview-container="#container-preview-show-edit"
-                class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
-            <p class="text-[11px] text-slate-400 mt-1">Format: JPG, PNG, WEBP, HEIC (Maksimal 15MB. Otomatis dioptimalkan).</p>
-            @error('foto')
-                <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
-            @enderror
-        </div>
+        <x-photo-upload id="edit_foto" name="foto" :currentPhoto="$kambing->foto" label="Ganti Foto" />
 
         <!-- Catatan -->
         <div>

@@ -89,28 +89,7 @@
             </div>
 
             <!-- Foto -->
-            <div>
-                <label for="foto" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Foto Kambing
-                </label>
-                <div id="container-preview-create" class="hidden mb-2">
-                    <div class="relative inline-block w-20 h-20 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-sm bg-slate-50">
-                        <img id="preview-foto-create" src="" alt="Preview Foto" class="w-full h-full object-cover">
-                        <button type="button" onclick="clearFotoUpload('foto', 'container-preview-create', 'preview-foto-create')"
-                                class="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                            <i class="ti ti-x text-[10px]"></i>
-                        </button>
-                    </div>
-                </div>
-                <input type="file" name="foto" id="foto" accept="image/*"
-                    data-preview="#preview-foto-create"
-                    data-preview-container="#container-preview-create"
-                    class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
-                <p class="text-[11px] text-slate-400 mt-1">Format: JPG, PNG, WEBP, HEIC (Maksimal 15MB. Otomatis dioptimalkan).</p>
-                @error('foto')
-                    <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
-                @enderror
-            </div>
+            <x-photo-upload id="foto" name="foto" label="Foto Kambing" />
 
             <!-- Catatan -->
             <div>

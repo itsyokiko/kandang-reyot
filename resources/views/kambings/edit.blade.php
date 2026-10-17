@@ -90,34 +90,7 @@
             </div>
 
             <!-- Foto -->
-            <div>
-                <label for="foto" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Ganti Foto Kambing
-                </label>
-                <div id="container-preview-edit" class="hidden mb-2">
-                    <div class="relative inline-block w-20 h-20 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-sm bg-slate-50">
-                        <img id="preview-foto-edit" src="" alt="Preview Foto Baru" class="w-full h-full object-cover">
-                        <button type="button" onclick="clearFotoUpload('foto', 'container-preview-edit', 'preview-foto-edit')"
-                                class="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                            <i class="ti ti-x text-[10px]"></i>
-                        </button>
-                    </div>
-                </div>
-                @if ($kambing->foto)
-                    <div class="flex items-center gap-3 mb-2 p-2 border border-slate-200 rounded-xl bg-slate-50">
-                        <img src="{{ asset('storage/' . $kambing->foto) }}" alt="{{ $kambing->nama }}" class="w-12 h-12 object-cover rounded-lg border border-slate-300">
-                        <span class="text-xs text-slate-500">Foto saat ini. Pilih file baru jika ingin mengganti.</span>
-                    </div>
-                @endif
-                <input type="file" name="foto" id="foto" accept="image/*"
-                    data-preview="#preview-foto-edit"
-                    data-preview-container="#container-preview-edit"
-                    class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
-                <p class="text-[11px] text-slate-400 mt-1">Format: JPG, PNG, WEBP, HEIC (Maksimal 15MB. Otomatis dioptimalkan).</p>
-                @error('foto')
-                    <p class="text-rose-500 text-xs mt-1 font-medium">{{ $message }}</p>
-                @enderror
-            </div>
+            <x-photo-upload id="foto" name="foto" :currentPhoto="$kambing->foto" label="Ganti Foto Kambing" />
 
             <!-- Catatan -->
             <div>
