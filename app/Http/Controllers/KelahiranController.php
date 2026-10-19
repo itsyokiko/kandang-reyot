@@ -11,6 +11,32 @@ use Illuminate\Support\Facades\Validator;
 
 class KelahiranController extends Controller
 {
+    private function getIndukQuery()
+    {
+        $batasCempe = now()->subMonths(6)->toDateString();
+
+        return Kambing::where('jenis_kelamin', 'betina')
+            ->where('status', 'hidup')
+            ->where(function ($q) use ($batasCempe) {
+                $q->whereNull('tanggal_lahir')
+                  ->orWhere('tanggal_lahir', '<=', $batasCempe);
+            })
+            ->orderBy('nama');
+    }
+
+    private function getPejantanQuery()
+    {
+        $batasCempe = now()->subMonths(6)->toDateString();
+
+        return Kambing::where('jenis_kelamin', 'jantan')
+            ->where('status', 'hidup')
+            ->where(function ($q) use ($batasCempe) {
+                $q->whereNull('tanggal_lahir')
+                  ->orWhere('tanggal_lahir', '<=', $batasCempe);
+            })
+            ->orderBy('nama');
+    }
+
     public function index()
     {
         $kelahirans = Kelahiran::with(['induk', 'pejantan', 'perkawinan', 'anaks'])
@@ -21,8 +47,8 @@ class KelahiranController extends Controller
             ->latest('tanggal_kawin')
             ->get();
 
-        $betinas  = Kambing::where('jenis_kelamin', 'betina')->orderBy('nama')->get();
-        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->orderBy('nama')->get();
+        $betinas  = $this->getIndukQuery()->get();
+        $pejantans = $this->getPejantanQuery()->get();
 
         $allKambings = Kambing::select('id', 'nama', 'ras', 'jenis_kelamin', 'tanggal_lahir', 'induk_id', 'pejantan_id')
             ->orderBy('nama')
@@ -37,8 +63,8 @@ class KelahiranController extends Controller
             ->latest('tanggal_kawin')
             ->get();
 
-        $betinas  = Kambing::where('jenis_kelamin', 'betina')->orderBy('nama')->get();
-        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->orderBy('nama')->get();
+        $betinas  = $this->getIndukQuery()->get();
+        $pejantans = $this->getPejantanQuery()->get();
 
         $allKambings = Kambing::select('id', 'nama', 'ras', 'jenis_kelamin', 'tanggal_lahir', 'induk_id', 'pejantan_id')
             ->orderBy('nama')
@@ -98,6 +124,12 @@ class KelahiranController extends Controller
                     if ($k && $k->jenis_kelamin !== 'betina') {
                         $fail('Induk yang dipilih harus berjenis kelamin betina.');
                     }
+                    if ($k && $k->status !== 'hidup') {
+                        $fail("Induk yang berstatus {$k->status} tidak dapat dicatat melahirkan.");
+                    }
+                    if ($k && $k->tanggal_lahir && $k->tanggal_lahir->diffInMonths(now()) < 6) {
+                        $fail('Induk masih cempe (usia di bawah 6 bulan) dan belum matang secara biologis.');
+                    }
                 },
             ],
             'pejantan_id' => [
@@ -110,6 +142,9 @@ class KelahiranController extends Controller
                         if ($k && $k->jenis_kelamin !== 'jantan') {
                             $fail('Pejantan yang dipilih harus berjenis kelamin jantan.');
                         }
+                        if ($k && $k->status !== 'hidup') {
+                            $fail("Pejantan yang berstatus {$k->status} tidak dapat dipilih.");
+                        }
                     }
                 },
             ],
@@ -118,24 +153,58 @@ class KelahiranController extends Controller
             'anak.*.kambing_id'             => ['nullable', 'exists:kambings,id'],
             'anak.*.nama'                   => ['nullable', 'string', 'max:255'],
             'anak.*.jenis_kelamin'          => ['nullable', 'in:jantan,betina'],
-            'anak.*.tanggal_lahir'          => ['required', 'date'],
+            'anak.*.tanggal_lahir'          => ['required', 'date', 'before_or_equal:today'],
             'anak.*.ras'                    => ['nullable', 'string', 'max:255'],
             'anak.*.pejantan_id'            => ['nullable', 'string'],
             'anak.*.nama_pejantan_luar'     => ['nullable', 'string', 'max:255'],
             'anak.*.catatan'                => ['nullable', 'string'],
         ], [
             'anak.*.tanggal_lahir.required' => 'Tanggal lahir setiap anak wajib diisi.',
+            'anak.*.tanggal_lahir.before_or_equal' => 'Tanggal lahir anak tidak boleh di masa depan.',
         ]);
 
         $validator->after(function ($v) use ($request) {
+            $indukId = $request->input('induk_id');
+            $pejantanId = $request->input('pejantan_id');
+            $induk = $indukId ? Kambing::find($indukId) : null;
+            $pejantan = $pejantanId ? Kambing::find($pejantanId) : null;
+
+            // Validasi perkawinan jika ada
+            $perkawinan = null;
+            if ($request->filled('perkawinan_id')) {
+                $perkawinan = Perkawinan::find($request->input('perkawinan_id'));
+                if ($perkawinan) {
+                    if (
+                        $perkawinan->betina_id != $indukId ||
+                        ($request->filled('pejantan_id') && $perkawinan->pejantan_id != $pejantanId)
+                    ) {
+                        $v->errors()->add('perkawinan_id', 'Pasangan perkawinan tidak sesuai dengan induk dan pejantan yang dipilih.');
+                    }
+                }
+            }
+
+            // Ambil riwayat tanggal kelahiran sebelumnya dari induk yang sama
+            $existingKelahiranDates = $induk ? Kelahiran::where('induk_id', $induk->id)->pluck('tanggal_kelahiran')->all() : [];
+
             $namaList = [];
             foreach ((array) $request->input('anak', []) as $i => $item) {
                 $nama = trim($item['nama'] ?? '');
                 $kambingId = $item['kambing_id'] ?? null;
+                $tglLahirAnak = $item['tanggal_lahir'] ?? null;
 
                 if (empty($nama) && empty($kambingId)) {
                     $v->errors()->add("anak.{$i}.nama", 'Nama anak wajib diisi.');
                     continue;
+                }
+
+                // Cek agar anak bukan induk atau bapaknya sendiri
+                if ($kambingId) {
+                    if ($kambingId == $indukId) {
+                        $v->errors()->add("anak.{$i}.kambing_id", 'Kambing tidak dapat menjadi anak dari dirinya sendiri.');
+                    }
+                    if ($pejantanId && $kambingId == $pejantanId) {
+                        $v->errors()->add("anak.{$i}.kambing_id", 'Kambing tidak dapat menjadi bapak sekaligus anak dari dirinya sendiri.');
+                    }
                 }
 
                 if (!empty($nama)) {
@@ -150,17 +219,34 @@ class KelahiranController extends Controller
                 if (!$exists && empty($item['jenis_kelamin'])) {
                     $v->errors()->add("anak.{$i}.jenis_kelamin", 'Jenis kelamin anak wajib dipilih.');
                 }
-            }
 
-            // Validasi kecocokan perkawinan
-            if ($request->filled('perkawinan_id')) {
-                $perkawinan = Perkawinan::find($request->input('perkawinan_id'));
-                if ($perkawinan) {
-                    if (
-                        $perkawinan->betina_id != $request->input('induk_id') ||
-                        ($request->filled('pejantan_id') && $perkawinan->pejantan_id != $request->input('pejantan_id'))
-                    ) {
-                        $v->errors()->add('perkawinan_id', 'Pasangan perkawinan tidak sesuai dengan induk dan pejantan yang dipilih.');
+                // Validasi kronologi tanggal lahir anak
+                if ($tglLahirAnak) {
+                    // 1. Tidak boleh mendahului tanggal lahir induk
+                    if ($induk && $induk->tanggal_lahir && $tglLahirAnak <= $induk->tanggal_lahir->toDateString()) {
+                        $v->errors()->add("anak.{$i}.tanggal_lahir", "Tanggal lahir anak ({$tglLahirAnak}) tidak boleh mendahului/sama dengan tanggal lahir induknya ({$induk->tanggal_lahir->format('d/m/Y')}).");
+                    }
+
+                    // 2. Tidak boleh mendahului tanggal lahir pejantan
+                    if ($pejantan && $pejantan->tanggal_lahir && $tglLahirAnak <= $pejantan->tanggal_lahir->toDateString()) {
+                        $v->errors()->add("anak.{$i}.tanggal_lahir", "Tanggal lahir anak ({$tglLahirAnak}) tidak boleh mendahului/sama dengan tanggal lahir pejantan ({$pejantan->tanggal_lahir->format('d/m/Y')}).");
+                    }
+
+                    // 3. Tidak boleh mendahului tanggal perkawinan
+                    if ($perkawinan && $perkawinan->tanggal_kawin && $tglLahirAnak < $perkawinan->tanggal_kawin->toDateString()) {
+                        $v->errors()->add("anak.{$i}.tanggal_lahir", "Tanggal lahir anak ({$tglLahirAnak}) tidak boleh mendahului tanggal perkawinan ({$perkawinan->tanggal_kawin->format('d/m/Y')}).");
+                    }
+
+                    // 4. Jarak dengan kelahiran sebelumnya minimal 120 hari (masa bunting normal ±150 hari)
+                    foreach ($existingKelahiranDates as $prevDate) {
+                        $prevDateStr = \Carbon\Carbon::parse($prevDate)->toDateString();
+                        if ($prevDateStr !== $tglLahirAnak) {
+                            $diffDays = abs(\Carbon\Carbon::parse($tglLahirAnak)->diffInDays(\Carbon\Carbon::parse($prevDateStr)));
+                            if ($diffDays < 120) {
+                                $v->errors()->add("anak.{$i}.tanggal_lahir", "Induk {$induk->nama} sudah tercatat melahirkan pada " . \Carbon\Carbon::parse($prevDateStr)->format('d/m/Y') . ". Jarak antar kelahiran minimal 120 hari (selisih saat ini: {$diffDays} hari).");
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -293,8 +379,8 @@ class KelahiranController extends Controller
         $kelahiran->load(['induk', 'pejantan', 'perkawinan', 'anaks']);
 
         $perkawinans = Perkawinan::with(['betina', 'pejantan'])->latest('tanggal_kawin')->get();
-        $betinas     = Kambing::where('jenis_kelamin', 'betina')->orderBy('nama')->get();
-        $pejantans   = Kambing::where('jenis_kelamin', 'jantan')->orderBy('nama')->get();
+        $betinas     = $this->getIndukQuery()->orWhere('id', $kelahiran->induk_id)->get();
+        $pejantans   = $this->getPejantanQuery()->orWhere('id', $kelahiran->pejantan_id)->get();
 
         return view('kelahirans.show', compact('kelahiran', 'perkawinans', 'betinas', 'pejantans'));
     }
@@ -304,8 +390,8 @@ class KelahiranController extends Controller
         $kelahiran->load(['induk', 'pejantan', 'perkawinan', 'anaks']);
 
         $perkawinans = Perkawinan::with(['betina', 'pejantan'])->latest('tanggal_kawin')->get();
-        $betinas     = Kambing::where('jenis_kelamin', 'betina')->orderBy('nama')->get();
-        $pejantans   = Kambing::where('jenis_kelamin', 'jantan')->orderBy('nama')->get();
+        $betinas     = $this->getIndukQuery()->orWhere('id', $kelahiran->induk_id)->get();
+        $pejantans   = $this->getPejantanQuery()->orWhere('id', $kelahiran->pejantan_id)->get();
 
         return view('kelahirans.edit', compact('kelahiran', 'perkawinans', 'betinas', 'pejantans'));
     }
@@ -317,10 +403,16 @@ class KelahiranController extends Controller
             'induk_id'          => [
                 'required',
                 'exists:kambings,id',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($kelahiran) {
                     $k = Kambing::find($value);
                     if ($k && $k->jenis_kelamin !== 'betina') {
                         $fail('Induk yang dipilih harus berjenis kelamin betina.');
+                    }
+                    if ($k && $k->status !== 'hidup' && $k->id != $kelahiran->induk_id) {
+                        $fail("Induk yang berstatus {$k->status} tidak dapat dicatat melahirkan.");
+                    }
+                    if ($k && $k->tanggal_lahir && $k->tanggal_lahir->diffInMonths(now()) < 6 && $k->id != $kelahiran->induk_id) {
+                        $fail('Induk masih cempe (usia di bawah 6 bulan) dan belum matang secara biologis.');
                     }
                 },
             ],
@@ -328,28 +420,65 @@ class KelahiranController extends Controller
                 'nullable',
                 'exists:kambings,id',
                 'different:induk_id',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($kelahiran) {
                     if ($value) {
                         $k = Kambing::find($value);
                         if ($k && $k->jenis_kelamin !== 'jantan') {
                             $fail('Pejantan yang dipilih harus berjenis kelamin jantan.');
                         }
+                        if ($k && $k->status !== 'hidup' && $k->id != $kelahiran->pejantan_id) {
+                            $fail("Pejantan yang berstatus {$k->status} tidak dapat dipilih.");
+                        }
                     }
                 },
             ],
-            'tanggal_kelahiran' => ['required', 'date'],
+            'tanggal_kelahiran' => ['required', 'date', 'before_or_equal:today'],
             'catatan'           => ['nullable', 'string'],
+        ], [
+            'tanggal_kelahiran.before_or_equal' => 'Tanggal kelahiran tidak boleh di masa depan.',
         ]);
 
-        $validator->after(function ($v) use ($request) {
+        $validator->after(function ($v) use ($request, $kelahiran) {
+            $indukId = $request->input('induk_id');
+            $pejantanId = $request->input('pejantan_id');
+            $tglKelahiran = $request->input('tanggal_kelahiran');
+            $induk = $indukId ? Kambing::find($indukId) : null;
+            $pejantan = $pejantanId ? Kambing::find($pejantanId) : null;
+
             if ($request->filled('perkawinan_id')) {
                 $perkawinan = Perkawinan::find($request->input('perkawinan_id'));
                 if ($perkawinan) {
                     if (
-                        $perkawinan->betina_id != $request->input('induk_id') ||
-                        ($request->filled('pejantan_id') && $perkawinan->pejantan_id != $request->input('pejantan_id'))
+                        $perkawinan->betina_id != $indukId ||
+                        ($request->filled('pejantan_id') && $perkawinan->pejantan_id != $pejantanId)
                     ) {
                         $v->errors()->add('perkawinan_id', 'Pasangan perkawinan tidak sesuai dengan induk dan pejantan yang dipilih.');
+                    }
+                    if ($tglKelahiran && $perkawinan->tanggal_kawin && $tglKelahiran < $perkawinan->tanggal_kawin->toDateString()) {
+                        $v->errors()->add('tanggal_kelahiran', "Tanggal kelahiran tidak boleh mendahului tanggal perkawinan ({$perkawinan->tanggal_kawin->format('d/m/Y')}).");
+                    }
+                }
+            }
+
+            if ($tglKelahiran) {
+                if ($induk && $induk->tanggal_lahir && $tglKelahiran <= $induk->tanggal_lahir->toDateString()) {
+                    $v->errors()->add('tanggal_kelahiran', "Tanggal kelahiran tidak boleh mendahului/sama dengan tanggal lahir induk ({$induk->tanggal_lahir->format('d/m/Y')}).");
+                }
+                if ($pejantan && $pejantan->tanggal_lahir && $tglKelahiran <= $pejantan->tanggal_lahir->toDateString()) {
+                    $v->errors()->add('tanggal_kelahiran', "Tanggal kelahiran tidak boleh mendahului/sama dengan tanggal lahir pejantan ({$pejantan->tanggal_lahir->format('d/m/Y')}).");
+                }
+
+                if ($induk) {
+                    $prevDates = Kelahiran::where('induk_id', $induk->id)
+                        ->where('id', '!=', $kelahiran->id)
+                        ->pluck('tanggal_kelahiran');
+
+                    foreach ($prevDates as $prevDate) {
+                        $diffDays = abs(\Carbon\Carbon::parse($tglKelahiran)->diffInDays(\Carbon\Carbon::parse($prevDate)));
+                        if ($diffDays < 120) {
+                            $v->errors()->add('tanggal_kelahiran', "Induk {$induk->nama} sudah memiliki catatan kelahiran lain pada tanggal " . \Carbon\Carbon::parse($prevDate)->format('d/m/Y') . ". Jarak antar kelahiran minimal 120 hari.");
+                            break;
+                        }
                     }
                 }
             }

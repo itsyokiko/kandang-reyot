@@ -9,22 +9,35 @@ use Illuminate\Support\Facades\Validator;
 
 class PerkawinanController extends Controller
 {
+    private function getSiapKawinQuery(string $jenisKelamin)
+    {
+        $batasCempe = now()->subMonths(6)->toDateString();
+
+        return Kambing::where('jenis_kelamin', $jenisKelamin)
+            ->where('status', 'hidup')
+            ->where(function ($q) use ($batasCempe) {
+                $q->whereNull('tanggal_lahir')
+                  ->orWhere('tanggal_lahir', '<=', $batasCempe);
+            })
+            ->orderBy('nama');
+    }
+
     public function index()
     {
         $perkawinans = Perkawinan::with(['betina', 'pejantan'])
             ->latest('tanggal_kawin')
             ->get();
 
-        $betinas = Kambing::where('jenis_kelamin', 'betina')->where('status', '!=', 'mati')->orderBy('nama')->get();
-        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->where('status', '!=', 'mati')->orderBy('nama')->get();
+        $betinas = $this->getSiapKawinQuery('betina')->get();
+        $pejantans = $this->getSiapKawinQuery('jantan')->get();
 
         return view('perkawinans.index', compact('perkawinans', 'betinas', 'pejantans'));
     }
 
     public function create(Request $request)
     {
-        $betinas = Kambing::where('jenis_kelamin', 'betina')->where('status', '!=', 'mati')->orderBy('nama')->get();
-        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->where('status', '!=', 'mati')->orderBy('nama')->get();
+        $betinas = $this->getSiapKawinQuery('betina')->get();
+        $pejantans = $this->getSiapKawinQuery('jantan')->get();
 
         $selectedBetinaId = $request->query('betina_id');
         $selectedPejantanId = $request->query('pejantan_id');
@@ -58,8 +71,11 @@ class PerkawinanController extends Controller
                     if ($kambing && $kambing->jenis_kelamin !== 'betina') {
                         $fail('Kambing betina yang dipilih harus berjenis kelamin betina.');
                     }
-                    if ($kambing && $kambing->status === 'mati') {
-                        $fail('Kambing yang sudah mati tidak dapat dikawinkan.');
+                    if ($kambing && $kambing->status !== 'hidup') {
+                        $fail("Kambing yang berstatus {$kambing->status} tidak dapat dikawinkan.");
+                    }
+                    if ($kambing && $kambing->tanggal_lahir && $kambing->tanggal_lahir->diffInMonths(now()) < 6) {
+                        $fail('Kambing betina masih cempe (usia di bawah 6 bulan) dan belum matang untuk dikawinkan.');
                     }
                 },
             ],
@@ -78,8 +94,11 @@ class PerkawinanController extends Controller
                     if ($kambing && $kambing->jenis_kelamin !== 'jantan') {
                         $fail('Pejantan yang dipilih harus berjenis kelamin jantan.');
                     }
-                    if ($kambing && $kambing->status === 'mati') {
-                        $fail('Pejantan yang sudah mati tidak dapat dipilih.');
+                    if ($kambing && $kambing->status !== 'hidup') {
+                        $fail("Pejantan yang berstatus {$kambing->status} tidak dapat dipilih.");
+                    }
+                    if ($kambing && $kambing->tanggal_lahir && $kambing->tanggal_lahir->diffInMonths(now()) < 6) {
+                        $fail('Pejantan masih cempe (usia di bawah 6 bulan) dan belum matang untuk dikawinkan.');
                     }
                 },
             ];
@@ -148,8 +167,12 @@ class PerkawinanController extends Controller
 
     public function edit(Perkawinan $perkawinan)
     {
-        $betinas = Kambing::where('jenis_kelamin', 'betina')->where('status', '!=', 'mati')->orderBy('nama')->get();
-        $pejantans = Kambing::where('jenis_kelamin', 'jantan')->where('status', '!=', 'mati')->orderBy('nama')->get();
+        $betinas = $this->getSiapKawinQuery('betina')
+            ->orWhere('id', $perkawinan->betina_id)
+            ->get();
+        $pejantans = $this->getSiapKawinQuery('jantan')
+            ->orWhere('id', $perkawinan->pejantan_id)
+            ->get();
 
         return view('perkawinans.edit', compact('perkawinan', 'betinas', 'pejantans'));
     }
@@ -160,13 +183,16 @@ class PerkawinanController extends Controller
             'betina_id' => [
                 'required',
                 'exists:kambings,id',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($perkawinan) {
                     $kambing = Kambing::find($value);
                     if ($kambing && $kambing->jenis_kelamin !== 'betina') {
                         $fail('Kambing betina yang dipilih harus berjenis kelamin betina.');
                     }
-                    if ($kambing && $kambing->status === 'mati') {
-                        $fail('Kambing yang sudah mati tidak dapat dikawinkan.');
+                    if ($kambing && $kambing->status !== 'hidup' && $kambing->id != $perkawinan->betina_id) {
+                        $fail("Kambing yang berstatus {$kambing->status} tidak dapat dikawinkan.");
+                    }
+                    if ($kambing && $kambing->tanggal_lahir && $kambing->tanggal_lahir->diffInMonths(now()) < 6 && $kambing->id != $perkawinan->betina_id) {
+                        $fail('Kambing betina masih cempe (usia di bawah 6 bulan) dan belum matang untuk dikawinkan.');
                     }
                 },
             ],
@@ -174,10 +200,16 @@ class PerkawinanController extends Controller
                 'required',
                 'exists:kambings,id',
                 'different:betina_id',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($perkawinan) {
                     $kambing = Kambing::find($value);
                     if ($kambing && $kambing->jenis_kelamin !== 'jantan') {
                         $fail('Pejantan yang dipilih harus berjenis kelamin jantan.');
+                    }
+                    if ($kambing && $kambing->status !== 'hidup' && $kambing->id != $perkawinan->pejantan_id) {
+                        $fail("Pejantan yang berstatus {$kambing->status} tidak dapat dipilih.");
+                    }
+                    if ($kambing && $kambing->tanggal_lahir && $kambing->tanggal_lahir->diffInMonths(now()) < 6 && $kambing->id != $perkawinan->pejantan_id) {
+                        $fail('Pejantan masih cempe (usia di bawah 6 bulan) dan belum matang untuk dikawinkan.');
                     }
                 },
             ],

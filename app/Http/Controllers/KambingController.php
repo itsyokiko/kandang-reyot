@@ -90,11 +90,12 @@ class KambingController extends Controller
             ],
             'jenis_kelamin' => ['required', 'in:jantan,betina'],
             'ras' => ['nullable', 'string', 'max:255'],
-            'tanggal_lahir' => ['nullable', 'date'],
+            'tanggal_lahir' => ['nullable', 'date', 'before_or_equal:today'],
             'status' => ['required', 'in:hidup,mati,dijual'],
             'catatan' => ['nullable', 'string'],
             'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,heic,heif', 'max:15360'],
         ], [
+            'tanggal_lahir.before_or_equal' => 'Tanggal lahir tidak boleh di masa depan.',
             'foto.max' => 'Ukuran foto terlalu besar (maksimal 15MB).',
             'foto.image' => 'File yang diunggah harus berupa gambar (JPG, PNG, WEBP).',
         ]);
@@ -137,11 +138,12 @@ class KambingController extends Controller
             ],
             'jenis_kelamin' => ['required', 'in:jantan,betina'],
             'ras' => ['nullable', 'string', 'max:255'],
-            'tanggal_lahir' => ['nullable', 'date'],
+            'tanggal_lahir' => ['nullable', 'date', 'before_or_equal:today'],
             'status' => ['required', 'in:hidup,mati,dijual'],
             'catatan' => ['nullable', 'string'],
             'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,heic,heif', 'max:15360'],
         ], [
+            'tanggal_lahir.before_or_equal' => 'Tanggal lahir tidak boleh di masa depan.',
             'foto.max' => 'Ukuran foto terlalu besar (maksimal 15MB).',
             'foto.image' => 'File yang diunggah harus berupa gambar (JPG, PNG, WEBP).',
         ]);
@@ -169,7 +171,21 @@ class KambingController extends Controller
             unset($validated['foto']);
         }
 
+        $oldStatus = $kambing->status;
         $kambing->update($validated);
+
+        // Jika kambing mati atau dijual, bersihkan jadwal pengingat perawatan yang belum diberikan
+        if ($kambing->status !== 'hidup') {
+            $kambing->pengingatPerawatan()->where('status', 'belum_diberikan')->delete();
+
+            // Jika masih ada riwayat sakit yang sedang berjalan, selesaikan
+            if ($kambing->status === 'mati') {
+                $kambing->riwayatSakit()->where('status', 'sedang_sakit')->update([
+                    'status' => 'mati',
+                    'tanggal_selesai' => now()->toDateString(),
+                ]);
+            }
+        }
 
         return redirect()->route('kambings.show', $kambing)->with('success', 'Data kambing berhasil diperbarui.');
     }

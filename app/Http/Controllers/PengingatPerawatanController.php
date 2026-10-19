@@ -31,7 +31,7 @@ class PengingatPerawatanController extends Controller
 
         $pengingatPerawatans = $query->paginate(15)->withQueryString();
 
-        $kambings = Kambing::where('status', '!=', 'mati')->orderBy('nama')->get();
+        $kambings = Kambing::where('status', 'hidup')->orderBy('nama')->get();
 
         $countJadwal = PengingatPerawatan::where('status', 'belum_diberikan')->count();
         $countRiwayat = PengingatPerawatan::where('status', 'sudah_diberikan')->count();
@@ -41,7 +41,7 @@ class PengingatPerawatanController extends Controller
 
     public function create()
     {
-        $kambings = Kambing::where('status', '!=', 'mati')->orderBy('nama')->get();
+        $kambings = Kambing::where('status', 'hidup')->orderBy('nama')->get();
         $selectedKambingId = request('kambing_id');
 
         return view('pengingat_perawatan.create', compact('kambings', 'selectedKambingId'));
@@ -53,16 +53,27 @@ class PengingatPerawatanController extends Controller
 
         if ($isRiwayat) {
             $validated = $request->validate([
-                'kambing_id' => 'required|exists:kambings,id',
+                'kambing_id' => [
+                    'required',
+                    'exists:kambings,id',
+                    function ($attribute, $value, $fail) {
+                        $k = Kambing::find($value);
+                        if ($k && $k->status !== 'hidup') {
+                            $fail("Kambing yang berstatus {$k->status} tidak dapat dijadwalkan/diberi perawatan.");
+                        }
+                    },
+                ],
                 'jenis_perawatan' => 'required|string|max:255',
-                'tanggal_pemberian' => 'required|date',
+                'tanggal_pemberian' => 'required|date|before_or_equal:today',
                 'catatan' => 'nullable|string',
                 'ulang_hari' => 'nullable|integer|min:1',
-                'tanggal_berikutnya' => 'nullable|date',
+                'tanggal_berikutnya' => 'nullable|date|after:tanggal_pemberian',
             ], [
                 'kambing_id.required' => 'Kambing wajib dipilih.',
                 'jenis_perawatan.required' => 'Jenis perawatan wajib diisi.',
                 'tanggal_pemberian.required' => 'Tanggal pelaksanaan perawatan wajib diisi.',
+                'tanggal_pemberian.before_or_equal' => 'Tanggal riwayat pelaksanaan tidak boleh di masa depan.',
+                'tanggal_berikutnya.after' => 'Jadwal berikutnya harus setelah tanggal pelaksanaan.',
             ]);
 
             PengingatPerawatan::create([
@@ -97,7 +108,16 @@ class PengingatPerawatanController extends Controller
 
         // Mode Jadwal Biasa
         $validated = $request->validate([
-            'kambing_id' => 'required|exists:kambings,id',
+            'kambing_id' => [
+                'required',
+                'exists:kambings,id',
+                function ($attribute, $value, $fail) {
+                    $k = Kambing::find($value);
+                    if ($k && $k->status !== 'hidup') {
+                        $fail("Kambing yang berstatus {$k->status} tidak dapat dijadwalkan perawatan.");
+                    }
+                },
+            ],
             'jenis_perawatan' => 'required|string|max:255',
             'tanggal' => 'required|date',
             'catatan' => 'nullable|string',

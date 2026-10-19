@@ -15,14 +15,14 @@ class RiwayatSakitController extends Controller
             ->latest('tanggal_mulai')
             ->paginate(15);
 
-        $kambings = Kambing::where('status', '!=', 'mati')->orderBy('nama')->get();
+        $kambings = Kambing::where('status', 'hidup')->orderBy('nama')->get();
 
         return view('riwayat_sakit.index', compact('riwayatSakits', 'kambings'));
     }
 
     public function create()
     {
-        $kambings = Kambing::where('status', '!=', 'mati')->orderBy('nama')->get();
+        $kambings = Kambing::where('status', 'hidup')->orderBy('nama')->get();
         $selectedKambingId = request('kambing_id');
 
         return view('riwayat_sakit.create', compact('kambings', 'selectedKambingId'));
@@ -31,14 +31,34 @@ class RiwayatSakitController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'kambing_id' => 'required|exists:kambings,id',
-            'tanggal_mulai' => 'required|date',
+            'kambing_id' => [
+                'required',
+                'exists:kambings,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    $k = Kambing::find($value);
+                    if ($k && $k->status !== 'hidup') {
+                        $fail("Kambing yang berstatus {$k->status} tidak dapat dicatat sakit.");
+                        return;
+                    }
+                    if ($k && RiwayatSakit::where('kambing_id', $value)->where('status', 'sedang_sakit')->exists()) {
+                        $fail("Kambing {$k->nama} saat ini sedang dalam status sakit aktif. Harap konfirmasi kesembuhan riwayat sebelumnya terlebih dahulu.");
+                        return;
+                    }
+                    if ($k && $k->tanggal_lahir && $request->filled('tanggal_mulai')) {
+                        if ($request->input('tanggal_mulai') < $k->tanggal_lahir->toDateString()) {
+                            $fail("Tanggal mulai sakit tidak boleh sebelum tanggal lahir kambing ({$k->tanggal_lahir->format('d/m/Y')}).");
+                        }
+                    }
+                },
+            ],
+            'tanggal_mulai' => 'required|date|before_or_equal:today',
             'catatan' => 'nullable|string',
         ], [
             'kambing_id.required' => 'Kambing wajib dipilih.',
             'kambing_id.exists' => 'Kambing yang dipilih tidak valid.',
             'tanggal_mulai.required' => 'Tanggal mulai sakit wajib diisi.',
             'tanggal_mulai.date' => 'Format tanggal mulai sakit tidak valid.',
+            'tanggal_mulai.before_or_equal' => 'Tanggal mulai sakit tidak boleh di masa depan.',
         ]);
 
         $validated['status'] = 'sedang_sakit';
@@ -55,16 +75,18 @@ class RiwayatSakitController extends Controller
 
         $validated = $request->validate([
             'status' => 'required|in:sembuh,mati',
-            'tanggal_selesai' => 'required|date|after_or_equal:' . $tanggalMulaiStr,
+            'tanggal_selesai' => 'required|date|before_or_equal:today|after_or_equal:' . $tanggalMulaiStr,
         ], [
             'status.required' => 'Status hasil konfirmasi wajib dipilih.',
             'status.in' => 'Status hasil harus sembuh atau mati.',
             'tanggal_selesai.required' => 'Tanggal selesai / kematian wajib diisi.',
+            'tanggal_selesai.before_or_equal' => 'Tanggal selesai tidak boleh di masa depan.',
             'tanggal_selesai.after_or_equal' => 'Tanggal selesai tidak boleh sebelum tanggal mulai sakit.',
         ]);
 
         if ($validated['status'] === 'mati') {
             $riwayatSakit->kambing->update(['status' => 'mati']);
+            $riwayatSakit->kambing->pengingatPerawatan()->where('status', 'belum_diberikan')->delete();
         }
 
         $riwayatSakit->update([

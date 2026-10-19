@@ -87,7 +87,7 @@ class DashboardController extends Controller
 
         foreach ($betinas as $b) {
             $info = $b->kesiapan_kawin_info;
-            if ($info && $info['status'] === 'siap') {
+            if ($info && in_array($info['status'], ['siap', 'belum_ada_riwayat'])) {
                 $betinaSiapKawinCount++;
             } elseif ($info && $info['status'] === 'pemulihan') {
                 $betinaMasaPemulihanCount++;

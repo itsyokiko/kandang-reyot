@@ -240,6 +240,15 @@ class Kambing extends Model
             return null;
         }
 
+        // Jika masih cempe (usia < 6 bulan), belum matang untuk reproduksi
+        if ($this->tanggal_lahir && $this->tanggal_lahir->diffInMonths(now()) < 6) {
+            return [
+                'status' => 'belum_dewasa',
+                'label' => 'Belum Dewasa (Cempe)',
+                'keterangan' => 'Usia masih di bawah 6 bulan, belum siap kawin',
+            ];
+        }
+
         $kelahiranTerakhir = $this->kelahiranSebagaiInduk()
             ->latest('tanggal_kelahiran')
             ->first();
@@ -247,7 +256,7 @@ class Kambing extends Model
         if (!$kelahiranTerakhir) {
             return [
                 'status' => 'belum_ada_riwayat',
-                'label' => 'Belum Ada Riwayat Kelahiran',
+                'label' => 'Siap Dikawinkan (Dara)',
                 'keterangan' => 'Belum pernah melahirkan di kandang',
             ];
         }
